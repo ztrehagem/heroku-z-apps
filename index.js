@@ -4,4 +4,4 @@ http.createServer(function(req, resp) {
   resp.writeHead(200, {'Content-Type': 'text/plain'});
   resp.write('hello!');
   resp.end();
-}).listen(80);
+}).listen(process.env.PORT || 8900);
