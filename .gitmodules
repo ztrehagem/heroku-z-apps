@@ -1,0 +1,3 @@
+[submodule "gulp-template"]
+	path = gulp-template
+	url = https://github.com/ztrehagem/gulp-template.git
