@@ -15,5 +15,18 @@
   "bugs": {
     "url": "https://github.com/ztrehagem/heroku-test/issues"
   },
-  "homepage": "https://github.com/ztrehagem/heroku-test#readme"
+  "homepage": "https://github.com/ztrehagem/heroku-test#readme",
+  "devDependencies": {
+    "browser-sync": "^2.14.0",
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.0",
+    "gulp-minify-html": "^1.0.6",
+    "gulp-nop": "0.0.3",
+    "gulp-plumber": "^1.1.0",
+    "gulp-sass": "^2.3.2",
+    "gulp-sourcemaps": "^1.6.0",
+    "gulp-uglify": "^2.0.0",
+    "minimist": "^1.2.0",
+    "node-notifier": "^4.6.1"
+  }
 }

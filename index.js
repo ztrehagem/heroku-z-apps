@@ -1,7 +1,8 @@
-var http = require('http');
+var HTTP = require('http');
+var router = require('./server/router');
+var handler = require('./server/handler');
 
-http.createServer(function(req, resp) {
-  resp.writeHead(200, {'Content-Type': 'text/plain'});
-  resp.write('hello!');
-  resp.end();
-}).listen(process.env.PORT || 8900);
+router.init(JSON.parse(require('fs').readFileSync('./routes.json')));
+HTTP.createServer(handler).listen(process.env.PORT);
+
+console.log('server has started');
