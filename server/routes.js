@@ -1,6 +1,6 @@
-var ns = require('./server/router').ns;
+var ns = require('./router').ns;
 
-module.exports = ns(null, {
+module.exports = ns({
   '/': 'index',
   '/one': 'one',
   '/two': 'two'
