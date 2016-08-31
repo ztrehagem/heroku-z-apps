@@ -4,10 +4,10 @@ function user(req, resp) {
 
 }
 
-user.new = function(req, resp) {
+user.create = function(req, resp) {
 
 };
 
-user.edit = function(req, resp) {
-
+user.update = function(req, resp, params) {
+  console.log('user update', params);
 };

@@ -1,10 +1,16 @@
 module.exports = router;
 
+var routes = router.routes = [];
+
 function router(pathname) {
-  // TODO regexp matching
-  return router.routes[pathname];
+  var execResult;
+  var route = routes.find(function(route) {
+    return (execResult = route.regexp.exec(pathname));
+  });
+  return route && function(req, resp) {
+    route.controller(req, resp, route.convertParams(execResult.slice(1)));
+  };
 }
-var routes = router.routes = {};
 
 router.init = function(config) {
   createRoute('', config);
@@ -16,7 +22,6 @@ router.ns = function(name, paths, children) {
     children = paths;
     paths = null;
   }
-
   return {
     name: name,
     paths: paths,
@@ -26,23 +31,47 @@ router.ns = function(name, paths, children) {
 
 function createRoute(stack, obj) {
   var name = obj.name;
+  var currentStack = stack + (name ? '/' + name : '');
   var paths = obj.paths;
   if( paths ) {
-    var controller = require('./controllers' + stack + '/' + (name || 'root'));
+    var ctrls = require('./controllers' + stack + '/' + (name || 'root'));
     for( var path in paths ) {
-      routes[stack + (name ? '/' + name : '') + path] = controller[paths[path]];
+      routes.push(new Route(currentStack + path, ctrls[paths[path]]));
     }
   }
   var children = obj.children;
   if( children ) {
     children.forEach(function(child) {
-      createRoute(stack + (name ? '/' + name : ''), child);
+      createRoute(currentStack, child);
     });
   }
 }
 
+function Route(uri, controller) {
+  this.original = uri;
+  this.controller = controller;
+  this.parse();
+}
+Route.prototype.parse = function() {
+  this.regexp = new RegExp('^' + this.original.replace(/:[^/]+/g, '([^/]+)').replace(/\//g, '\\/') + '$');
+  this.paramKeys = this.original.split('/').filter(function(path) {
+    return path.startsWith(':');
+  }).map(function(path) {
+    return path.substring(1);
+  });
+};
+Route.prototype.convertParams = function(rowParams) {
+  var params = {};
+  for( var i = 0; i < this.paramKeys.length; i++ ) {
+    params[this.paramKeys[i]] = rowParams[i];
+  }
+  return params;
+};
+
 function logRoutes() {
-  console.log('--- routes ---');
-  for( var route in routes ) console.log(routes[route] ? '          ' : 'undefined ', route);
-  console.log('--------------');
+  console.log('------ routes ------');
+  routes.forEach(function(route) {
+    console.log(route.controller ? '          ' : 'undefined ', route.original);
+  });
+  console.log('--------------------');
 }

@@ -22,7 +22,7 @@ module.exports = ns(null, {
       ns('user', {
         '': 'index',
         '/create': 'create',
-        '/update': 'update'
+        '/:id/update': 'update'
       })
     ])
   ])

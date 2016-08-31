@@ -1,5 +1,5 @@
 var Root = module.exports = {};
 
-Root.index = function(req, resp) {
-  console.log('root!');
+Root.index = function(req, resp, params) {
+  console.log('root!', params);
 };
