@@ -1,33 +1,48 @@
 module.exports = router;
 
 function router(pathname) {
+  // TODO regexp matching
   return router.routes[pathname];
 }
 var routes = router.routes = {};
 
 router.init = function(config) {
-  createRoute('', config, true);
+  createRoute('', config);
   logRoutes();
 };
 
-function createRoute(path, array, isRoot) {
-  if( !Array.isArray(array) ) return createChildren(path, array);
+router.ns = function(name, paths, children) {
+  if( Array.isArray(paths) ) {
+    children = paths;
+    paths = null;
+  }
 
-  var ctrl = require('./controllers' + path + (isRoot ? '/root' : ''));
-  if( typeof ctrl == 'function' ) routes[isRoot ? '/' : path] = ctrl;
+  return {
+    name: name,
+    paths: paths,
+    children: children
+  };
+};
 
-  array.forEach(function(name) {
-    if( typeof name == 'string' ) routes[path + '/' + name] = ctrl[name];
-    else createChildren(path, name);
-  });
-}
-
-function createChildren(path, children) {
-  for( var name in children ) createRoute(path + '/' + name, children[name]);
+function createRoute(stack, obj) {
+  var name = obj.name;
+  var paths = obj.paths;
+  if( paths ) {
+    var controller = require('./controllers' + stack + '/' + (name || 'root'));
+    for( var path in paths ) {
+      routes[stack + (name ? '/' + name : '') + path] = controller[paths[path]];
+    }
+  }
+  var children = obj.children;
+  if( children ) {
+    children.forEach(function(child) {
+      createRoute(stack + (name ? '/' + name : ''), child);
+    });
+  }
 }
 
 function logRoutes() {
   console.log('--- routes ---');
-  for( var route in routes ) console.log(route);
+  for( var route in routes ) console.log(routes[route] ? '          ' : 'undefined ', route);
   console.log('--------------');
 }
