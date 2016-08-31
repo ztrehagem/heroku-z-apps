@@ -1,9 +1,9 @@
 var ns = require('./router').ns;
 
 module.exports = ns({
-  '/': 'index',
+  '/': {get: 'index'},
   '/one': 'one',
-  '/two': 'two'
+  '/form': {get: 'show', post: 'form'}
 }, [
   ns('hoge', {
     '': 'hoge',

@@ -24,57 +24,54 @@ function Router(config, options) {
   this.options = options;
   createRoutes(this.routes, '', config);
 }
-Router.prototype.route = function(pathname) {
-  var execResult;
+Router.prototype.route = function(method, pathname) {
+  var matches;
   var route = this.routes.find(function(route) {
-    return (execResult = route.regexp.exec(pathname));
+    return route.method == method.toUpperCase() &&
+      (matches = route.regexp.exec(pathname));
   });
   return route && {
     uri: route.uri,
     ctrlPath: route.ctrlPath,
     actionName: route.actionName,
-    params: route.convertParams(execResult.slice(1))
+    params: route.convertParams(matches.slice(1))
   };
 };
 function createRoutes(routes, stack, obj) {
   var name = obj.name;
   var currentStack = stack + (name || '');
-  var paths = obj.paths;
-  if( paths ) {
-    for( var path in paths ) {
-      routes.push(new Route(currentStack + path, stack + (name || '/root'), paths[path]));
+  forObj(obj.paths || {}, function(path, actions) {
+    if( typeof actions == 'string' ) {
+      actions = {'get': actions};
     }
-  }
-  var children = obj.children;
-  if( children ) {
-    for( var i = 0; i < children.length; i++ ) {
-      createRoutes(routes, currentStack + '/', children[i]);
-    }
-  }
+    forObj(actions, function(method, actionName) {
+      routes.push(new Route(method, currentStack + path, stack + (name || '/root'), actionName));
+    });
+  });
+  (obj.children || []).forEach(function(child) {
+    createRoutes(routes, currentStack + '/', child);
+  });
 }
 Router.prototype.logRoutes = function() {
   console.log('------ routes ------');
   this.routes.forEach(function(route) {
-    console.log(route.uri, '  -> ', route.ctrlPath + '#' + route.actionName);
+    console.log(route.method, route.uri, '  -> ', route.ctrlPath + '#' + route.actionName);
   });
   console.log('--------------------');
 };
 
-
-function Route(uri, ctrlPath, actionName) {
+function Route(method, uri, ctrlPath, actionName) {
+  this.method = method.toUpperCase();
   this.uri = uri;
   this.ctrlPath = ctrlPath;
   this.actionName = actionName;
-  this.parse();
-}
-Route.prototype.parse = function() {
   this.regexp = new RegExp('^' + this.uri.replace(/:[^/]+/g, '([^/]+)').replace(/\//g, '\\/') + '$');
   this.paramKeys = this.uri.split('/').filter(function(path) {
     return path.startsWith(':');
   }).map(function(path) {
     return path.substring(1);
   });
-};
+}
 Route.prototype.convertParams = function(rowParams) {
   var params = {};
   for( var i = 0; i < this.paramKeys.length; i++ ) {
@@ -82,3 +79,9 @@ Route.prototype.convertParams = function(rowParams) {
   }
   return params;
 };
+
+function forObj(obj, fn) {
+  Object.keys(obj).forEach(function(key) {
+    fn(key, obj[key]);
+  });
+}
