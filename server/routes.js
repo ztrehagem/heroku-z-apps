@@ -1,6 +1,6 @@
-var ns = require('./router').ns;
+var ns = require('z-router').namespace;
 
-module.exports = ns({
+module.exports = ns('root', {
   '/': {get: 'index'},
   '/one': 'one',
   '/form': {get: 'show', post: 'form'}

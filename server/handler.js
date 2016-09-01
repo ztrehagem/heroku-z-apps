@@ -1,8 +1,8 @@
 module.exports = handler;
 
 var URL = require('url');
-var router = require('./router')(require('./routes'));
-router.logRoutes();
+var router = require('z-router')(require('./routes'));
+console.log(router.routesToString());
 var extendResponse = require('./utils/extend-response');
 
 function handler(req, resp) {
