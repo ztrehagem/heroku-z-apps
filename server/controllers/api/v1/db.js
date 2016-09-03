@@ -1,8 +1,9 @@
 var pg = require('pg');
 
+pg.defaults.ssl = !!process.env.DATABASE_URL;
 
 exports.test = (req, resp, params) => {
-  pg.defaults.ssl = !!process.env.DATABASE_URL;
+
   pg.connect(process.env.DATABASE_URL || 'heroku-test', (err, client) => {
     if (err) throw err;
     console.log('Connected to postgres! Getting schemas...');
@@ -20,6 +21,7 @@ exports.test = (req, resp, params) => {
       })
       .on('end', ()=> {
         resp.writeHead('200', {'Content-Type': 'text/plain'});
+        resp.write(process.env.DATABASE_URL);
         resp.end(strbuf.join(''));
       });
   });
