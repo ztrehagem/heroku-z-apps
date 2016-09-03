@@ -1,24 +1,37 @@
 module.exports = handler;
 
 var URL = require('url');
+var PATH = require('path');
 var router = require('z-router')(require('./routes'));
+var fileServer = new (require('node-static').Server)('./public');
+var responseUtils = require('./utils/response-utils');
+
 console.log(router.routesToString());
-var extendResponse = require('./utils/extend-response');
+
 
 function handler(req, resp) {
-  resp = extendResponse(resp);
+  Object.assign(resp, responseUtils);
 
   console.log('requested:', req.url);
 
   if( !route(req, resp) ) return resp.writeNotFound();
-
-  resp.writeHead(200, {'Content-Type': 'text/plain'});
-  resp.write('hello!');
-  resp.end();
 }
 
 function route(req, resp) {
-  var route = router.route(req.method, URL.parse(req.url).pathname);
+  var pathname = PATH.resolve(URL.parse(req.url).pathname);
+  if( !pathname.startsWith('/api/') ) {
+    if( !PATH.extname(pathname).length ) {
+      fileServer.serveFile('/index.html', 200, {}, req, resp);
+    } else {
+      fileServer.serve(req, resp, function(e, res) {
+        if( e && e.status == 404 ) {
+          resp.writeNotFound();
+        }
+      });
+    }
+    return true;
+  }
+  var route = router.route(req.method, pathname);
   if( !route ) return;
   var ctrlModule = require('./controllers' + route.ctrlPath);
   if( !ctrlModule ) { console.warn('undefined controller module'); return; }
