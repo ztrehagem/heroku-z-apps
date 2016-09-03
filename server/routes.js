@@ -6,6 +6,9 @@ module.exports = ns('root', [
       ns('user', {
         '': {GET: 'index', POST: 'create'},
         '/:id': {PUT: 'update'}
+      }),
+      ns('db', {
+        '': 'test'
       })
     ])
   ])

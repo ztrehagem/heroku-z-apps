@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "node-static": "^0.7.8",
+    "pg": "^6.1.0",
     "z-router": "^1.1.0"
   }
 }
