@@ -1,23 +1,33 @@
 module.exports = handler;
 
 var URL = require('url');
-var router = require('./router');
-var extendResponse = require('./utils/extend-response');
+var PATH = require('path');
+var router = require('z-router')(require('./routes'), {
+  ctrlDir: 'server/controllers'
+});
+var fileServer = new (require('node-static').Server)('public');
+var responseUtils = require('./utils/response-utils');
+
+console.log(router.routesToString());
+
 
 function handler(req, resp) {
-  resp = extendResponse(resp);
-  handlerCore(req, resp);
-}
+  Object.assign(resp, responseUtils);
 
-function handlerCore(req, resp) {
-  var pathname = URL.parse(req.url).pathname;
-  console.log('requested:', pathname);
+  console.log('requested:', req.url);
 
-  var controller = router(pathname);
-  if( !controller ) { return resp.writeNotFound(); }
-  controller(req, resp);
+  var pathname = PATH.resolve(URL.parse(req.url).pathname);
 
-  resp.writeHead(200, {'Content-Type': 'text/plain'});
-  resp.write('hello!');
-  resp.end();
+  if( pathname.startsWith('/api/') ) {
+    var route = router.route(req.method, pathname);
+    if( route && typeof route.controller == 'function' )
+      return route.controller(req, resp, route.params);
+    return resp.writeNotFound();
+  } else if( !PATH.extname(pathname).length ) {
+    fileServer.serveFile('/index.html', 200, {}, req, resp);
+  } else {
+    fileServer.serve(req, resp, function(e, res) {
+      if( e && e.status == 404 ) resp.writeNotFound();
+    });
+  }
 }

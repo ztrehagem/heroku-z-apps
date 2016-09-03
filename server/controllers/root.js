@@ -1,5 +1,13 @@
-module.exports = root;
+var Root = module.exports = {};
 
-function root(req, resp) {
-  console.log('root!');
-}
+Root.index = function(req, resp, params) {
+  console.log('root!', params);
+};
+
+Root.show = function(req, resp, params) {
+  console.log('root,show', params);
+};
+
+Root.form = function(req, resp, params) {
+  console.log('root,form', params);
+};
