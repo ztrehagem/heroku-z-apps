@@ -1,4 +1,4 @@
-module.exports = handler;
+module.exports = handlerWrapper;
 
 var URL = require('url');
 var PATH = require('path');
@@ -10,6 +10,14 @@ var responseUtils = require('./utils/response-utils');
 
 console.log(router.routesToString());
 
+function handlerWrapper(req, resp) {
+  try {
+    handler(req, resp);
+  } catch (e) {
+    console.error('Internal Server Error', e);
+    resp.writeInternalServerError();
+  }
+}
 
 function handler(req, resp) {
   Object.assign(resp, responseUtils);
