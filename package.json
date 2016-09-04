@@ -30,8 +30,11 @@
     "node-notifier": "^4.6.1"
   },
   "dependencies": {
+    "app-module-path": "^1.1.0",
     "node-static": "^0.7.8",
     "pg": "^6.1.0",
+    "require-dir": "^0.3.0",
+    "sequelize": "^3.24.1",
     "z-router": "^1.1.0"
   }
 }
