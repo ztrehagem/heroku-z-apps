@@ -1,2 +1,4 @@
 node_modules/
 .jshintrc
+config/config.json
+public/
