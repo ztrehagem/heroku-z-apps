@@ -1,20 +1,34 @@
-var ctrl = module.exports = {};
+var ctrl = module.exports;
+var User = require('server/models/user');
+var $resp = require('server/utils/response');
+var Serializer = require('server/serializer');
 
-ctrl.index = function(req, resp, params) {
+ctrl.index = (req, resp, params)=> {
   console.log('user index', params);
-  resp.writeHead(200, {'Content-Type': 'text/plain'});
-  resp.write('user index!');
-  resp.end();
+  User.findAll().then((e)=> {
+    $resp.writeJson(resp, e.map(Serializer.user));
+  }).catch((e)=> {
+    $resp.writeInternalServerError(resp);
+  });
 };
 
-ctrl.create = function(req, resp, params) {
+ctrl.create = (req, resp, params)=> {
   console.log('user create', params);
-  resp.writeHead(200, {'Content-Type': 'text/plain'});
-  resp.write('user create!');
-  resp.end();
+  User.create({
+    name: 'test',
+    password: 'pass',
+    bio: 'hello'
+  }).then((e)=> {
+    console.log(''+e);
+    $resp.writeJson(resp, {
+      user: 'created'
+    });
+  }).catch((e)=> {
+    $resp.writeInternalServerError(resp);
+  });
 };
 
-ctrl.update = function(req, resp, params) {
+ctrl.update = (req, resp, params)=> {
   console.log('user update', params);
   resp.writeHead(200, {'Content-Type': 'text/plain'});
   resp.write('user update!');

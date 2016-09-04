@@ -1,5 +1,5 @@
 var Sequelize = require('sequelize');
-var entity = require('entity');
+var entity = require('server/entity');
 
 var User = module.exports = entity.define('user', {
   name: Sequelize.STRING,

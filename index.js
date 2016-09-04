@@ -1,17 +1,20 @@
-require('app-module-path').addPath(__dirname + '/server');
+require('app-module-path').addPath(__dirname);
 var HTTP = require('http');
-var handler = require('handler');
+var requireDir = require('require-dir');
 
-initEntities().then(startServer);
+initEntities().then(startServer).catch(()=> {
+  console.error('failed starting server');
+});
 
 // --
 
 function initEntities() {
-  require('require-dir')('./server/models');
-  return require('entity').sync();
+  requireDir('./server/models');
+  return require('server/entity').sync();
 }
 
 function startServer() {
+  var handler = require('server/handler');
   HTTP.createServer(handler).listen(process.env.PORT);
   console.log('server has started');
 }
