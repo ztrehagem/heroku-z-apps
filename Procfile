@@ -1,2 +1,1 @@
-web: node index.js
-migration: npm run sequelize -- db:migrate
+web: npm run sequelize -- db:migrate && node index.js
