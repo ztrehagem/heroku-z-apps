@@ -2,8 +2,8 @@ var URL = require('url');
 var PATH = require('path');
 var router = initRouter();
 var fileServer = new (require('node-static').Server)('public');
-var $resp = require('server/utils/response');
-var $req = require('server/utils/request');
+var $resp = require('utils/response');
+var $req = require('utils/request');
 
 module.exports = (req, resp)=> {
   try {
@@ -51,9 +51,7 @@ function routeStatics(req, resp, pathname) {
 }
 
 function initRouter() {
-  var router = require('z-router')(require('./routes'), {
-    ctrlDir: './server/controllers'
-  });
+  var router = require('z-router')(require('server/routes'));
   console.log(router.routesToString());
   return router;
 }

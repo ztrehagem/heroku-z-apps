@@ -1,8 +1,8 @@
 var ctrl = exports;
 var db = require('models');
-var $resp = require('server/utils/response');
-var $req = require('server/utils/request');
-var Serializer = require('server/serializer');
+var $resp = require('utils/response');
+var $req = require('utils/request');
+var Serializer = require('serializer');
 
 const ACCEPT_PARAMS = ['name', 'bio', 'hoge'];
 const REQUIRED_PARAMS = ['name'];
