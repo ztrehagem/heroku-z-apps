@@ -42,7 +42,11 @@ function routeScripts(req, resp, pathname) {
 
 function routeStatics(req, resp, pathname) {
   if( !PATH.extname(pathname).length ) {
-    fileServer.serveFile('/index.html', 200, {}, req, resp);
+    var match = pathname.match(/^\/(\w+?)(?:\/.*)?$/);
+    var filename = (match ? `/${match[0]}` : '') + '/index.html';
+    fileServer.serveFile(filename, 200, {}, req, resp).on('error', ()=> {
+      $resp.writeNotFound(resp);
+    });
   } else {
     fileServer.serve(req, resp, (e, res)=> {
       if( e && e.status == 404 ) $resp.writeNotFound(resp);
