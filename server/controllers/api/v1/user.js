@@ -1,12 +1,15 @@
 var ctrl = exports;
-var User = require('server/models/user');
+var db = require('models');
 var $resp = require('server/utils/response');
 var $req = require('server/utils/request');
 var Serializer = require('server/serializer');
 
+const ACCEPT_PARAMS = ['name', 'bio', 'hoge'];
+const REQUIRED_PARAMS = ['name'];
+
 ctrl.index = (req, resp, params)=> {
   console.log('user index', params);
-  User.findAll({order: 'id ASC'}).then((e)=> {
+  db.user.findAll({order: 'id ASC'}).then((e)=> {
     $resp.writeJson(resp, e.map(Serializer.user));
   }).catch((e)=> {
     $resp.writeInternalServerError(resp);
@@ -20,7 +23,7 @@ ctrl.create = (req, resp, uriParams)=> {
 
   try {
     params = $req.getAsJson(req);
-    if(!['name'].every((key)=> {
+    if(!REQUIRED_PARAMS.every((key)=> {
       return key in params;
     })) throw new Error('request has not enough params.');
   } catch(e) {
@@ -28,7 +31,7 @@ ctrl.create = (req, resp, uriParams)=> {
     return $resp.writeBadRequest(resp, $resp.Type.JSON);
   }
 
-  User.create(['name','bio'].reduce((user, key)=> {
+  db.user.create(ACCEPT_PARAMS.reduce((user, key)=> {
     user[key] = params[key];
     return user;
   }, {})).then((e)=> {
@@ -48,7 +51,7 @@ ctrl.update = (req, resp, uriParams)=> {
     return $resp.writeBadRequest(resp, $resp.Type.JSON);
   }
 
-  User.update(['name','bio'].reduce((user, key)=> {
+  db.user.update(ACCEPT_PARAMS.reduce((user, key)=> {
     user[key] = params[key];
     return user;
   }, {}), {where: {id: uriParams.id}}).then((e)=> {

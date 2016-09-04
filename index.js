@@ -9,8 +9,7 @@ initEntities().then(startServer).catch(()=> {
 // --
 
 function initEntities() {
-  requireDir('./server/models');
-  return require('server/entity').sync();
+  return require('models').sequelize.sync();
 }
 
 function startServer() {
