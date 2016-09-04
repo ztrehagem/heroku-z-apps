@@ -2,15 +2,14 @@ var URL = require('url');
 var PATH = require('path');
 var router = initRouter();
 var fileServer = new (require('node-static').Server)('public');
-var responseUtils = require('utils/response-utils');
+var $resp = require('utils/response-utils');
 
 module.exports = (req, resp)=> {
   try {
-    extendUtils(req, resp);
     handle(req, resp);
   } catch (e) {
     console.error('Internal Server Error', e);
-    resp.writeInternalServerError();
+    $resp.writeInternalServerError(resp);
   }
 };
 
@@ -34,7 +33,7 @@ function routeScripts(req, resp, pathname) {
   if( route && typeof route.controller == 'function' ) {
     route.controller(req, resp, route.params);
   } else {
-    resp.writeNotFound();
+    $resp.writeNotFound(resp);
   }
 }
 
@@ -43,14 +42,9 @@ function routeStatics(req, resp, pathname) {
     fileServer.serveFile('/index.html', 200, {}, req, resp);
   } else {
     fileServer.serve(req, resp, (e, res)=> {
-      if( e && e.status == 404 ) resp.writeNotFound();
+      if( e && e.status == 404 ) $resp.writeNotFound(resp);
     });
   }
-}
-
-function extendUtils(req, resp) {
-  // Object.assign(req, requestUtils);
-  Object.assign(resp, responseUtils);
 }
 
 function initRouter() {
