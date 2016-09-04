@@ -1,0 +1,23 @@
+{
+  "name": "heroku-test",
+  "description": "",
+  "main": "index.js",
+  "authors": [
+    "Shigeki Suwa <suwa.shigeki@gmail.com>"
+  ],
+  "license": "ISC",
+  "homepage": "https://github.com/ztrehagem/heroku-test",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "public/lib",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular": "^1.5.8",
+    "angular-resource": "^1.5.8",
+    "angular-ui-router": "^0.3.1"
+  }
+}
