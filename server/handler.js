@@ -3,6 +3,7 @@ var PATH = require('path');
 var router = initRouter();
 var fileServer = new (require('node-static').Server)('public');
 var $resp = require('server/utils/response');
+var $req = require('server/utils/request');
 
 module.exports = (req, resp)=> {
   try {
@@ -31,7 +32,9 @@ function routeScripts(req, resp, pathname) {
   var route = router.route(req.method, pathname);
 
   if( route && typeof route.controller == 'function' ) {
-    route.controller(req, resp, route.params);
+    $req.sync(req).then((extendedReq)=> {
+      route.controller(extendedReq, resp, route.params);
+    });
   } else {
     $resp.writeNotFound(resp);
   }
