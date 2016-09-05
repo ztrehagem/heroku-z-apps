@@ -15,7 +15,7 @@ module.exports = (req, resp)=> {
 };
 
 function handle(req, resp) {
-  console.log('requested:', req.url);
+  console.log('------------ requested:', req.url);
   route(req, resp);
 }
 
@@ -44,12 +44,14 @@ function routeStatics(req, resp, pathname) {
   if( !PATH.extname(pathname).length ) {
     var match = pathname.match(/^\/(\w+?)(?:\/.*)?$/);
     var filename = (match ? `/${match[0]}` : '') + '/index.html';
+    console.log('serve index file', filename);
     fileServer.serveFile(filename, 200, {}, req, resp).on('error', ()=> {
       $resp.writeNotFound(resp);
     });
   } else {
+    console.log('serve static file');
     fileServer.serve(req, resp, (e, res)=> {
-      if( e && e.status == 404 ) $resp.writeNotFound(resp);
+      if( e && e.status == 404 ) return $resp.writeNotFound(resp);
     });
   }
 }
