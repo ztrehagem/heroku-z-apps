@@ -4,10 +4,20 @@ module.exports = ns('root', [
   ns('api', [
     ns('shift', [
       ns('v1', [
-        ns('user', {
-          '': {GET: 'index', POST: 'create'},
-          '/:id': {PUT: 'update'}
-        })
+        ns('users', {
+          '': {GET: 'index', POST: 'create'}
+        }),
+        ns('schedules', {
+          '': 'index'
+        }),
+        ns('me', {
+          '': {GET: 'show', PUT: 'update', DELETE: 'delete'}
+        },[
+          ns('schedules', {
+            '': {GET: 'index', POST: 'create'},
+            ':id': {GET: 'show', PUT: 'update', DELETE: 'delete'}
+          })
+        ])
       ])
     ])
   ])

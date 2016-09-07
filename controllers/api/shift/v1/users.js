@@ -4,12 +4,12 @@ var $resp = require('utils/response');
 var $req = require('utils/request');
 var Serializer = require('serializer');
 
-const ACCEPT_PARAMS = ['name', 'bio', 'hoge'];
-const REQUIRED_PARAMS = ['name'];
+const ACCEPT_PARAMS = ['name', 'displayName', 'bio'];
+const REQUIRED_PARAMS = ['name', 'displayName'];
 
 ctrl.index = (req, resp, params)=> {
   console.log('user index', params);
-  db.user.findAll({order: 'id ASC'}).then((e)=> {
+  db.user.findAll().then((e)=> {
     $resp.writeJson(resp, e.map(Serializer.user));
   }).catch((e)=> {
     $resp.writeInternalServerError(resp);
