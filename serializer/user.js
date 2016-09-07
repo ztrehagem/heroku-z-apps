@@ -1,7 +1,6 @@
 module.exports = function(user) {
   return user && {
-    id: user.id,
-    name: user.name,
+    name: user.displayName,
     bio: user.bio
   };
 };
