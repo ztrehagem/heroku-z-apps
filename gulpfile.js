@@ -1,23 +1,22 @@
-const GulpTask = require('./gulp-template/gulp-task');
-const Resource = require('./gulp-template/resource');
-const $ = require('./gulp-template/gulp-modules');
+const Zelixir = require('z-elixir');
+const Resource = Zelixir.Resource;
+const Task = Zelixir.Task;
 
 const JS_APP_NAMES = ['root', 'shift'];
 
-Resource.add('html', Resource.templates.html());
-Resource.add('sass', Resource.templates.sass());
-Resource.add('js', JS_APP_NAMES.map((name)=> {
-  return new Resource.Builder()
-  .src(`js/${name}/*.js`)
-  .src(`js/${name}/*/**/*.js`)
-  .concat(true)
-  .destfile(`${name}.js`)
-  .dest(`js/`);
+Resource('html', Resource.template('html'));
+Resource('sass', Resource.template('sass'));
+Resource('js', JS_APP_NAMES.map((name)=> {
+  return Resource.create()
+    .src(`js/${name}/*`)
+    .src(`js/${name}/*/**/*.js`)
+    .concat(`${name}.js`)
+    .dest('js/');
 }));
 
-GulpTask.add('html', GulpTask.templates.html());
-GulpTask.add('sass', GulpTask.templates.sass());
-GulpTask.add('js', GulpTask.templates.js());
+Task('html', ['html'], Task.template('html'));
+Task('sass', ['sass'], Task.template('sass'));
+Task('js', ['js'], Task.template('js'));
 
-GulpTask.define();
-GulpTask.defineDefaultTasks();
+Task.default();
+Task.watch();
