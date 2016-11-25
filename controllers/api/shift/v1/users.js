@@ -10,9 +10,9 @@ const REQUIRED_PARAMS = ['name', 'displayName'];
 ctrl.index = (req, resp, params)=> {
   console.log('user index', params);
   db.user.findAll().then((e)=> {
-    $resp.writeJson(resp, e.map(Serializer.user));
+    resp.respondJson(e.map(Serializer.user));
   }).catch((e)=> {
-    $resp.writeInternalServerError(resp);
+    resp.respondMessageJson(HttpStatus.INTERNAL_SERVER_ERROR);
   });
 };
 
@@ -22,22 +22,22 @@ ctrl.create = (req, resp, uriParams)=> {
   var params;
 
   try {
-    params = $req.getAsJson(req);
+    params = req.getBodyAsJson();
     if(!REQUIRED_PARAMS.every((key)=> {
       return key in params;
     })) throw new Error('request has not enough params.');
   } catch(e) {
     console.warn('' + e);
-    return $resp.writeBadRequest(resp, $resp.Type.JSON);
+    return resp.respondMessageJson(HttpStatus.BAD_REQUEST);
   }
 
   db.user.create(ACCEPT_PARAMS.reduce((user, key)=> {
     user[key] = params[key];
     return user;
   }, {})).then((e)=> {
-    $resp.writeCreated(resp, $resp.Type.JSON, Serializer.user(e));
+    resp.respondMessageJson(HttpStatus.CREATED, Serializer.user(e));
   }).catch((e)=> {
-    $resp.writeBadRequest(resp, $resp.Type.JSON);
+    resp.respondMessageJson(HttpStatus.BAD_REQUEST);
   });
 };
 
@@ -45,18 +45,18 @@ ctrl.update = (req, resp, uriParams)=> {
   console.log('user update', uriParams);
 
   try {
-    params = $req.getAsJson(req);
+    params = req.getBodyAsJson();
   } catch(e) {
     console.warn('' + e);
-    return $resp.writeBadRequest(resp, $resp.Type.JSON);
+    return resp.respondMessageJson(HttpStatus.BAD_REQUEST);
   }
 
   db.user.update(ACCEPT_PARAMS.reduce((user, key)=> {
     user[key] = params[key];
     return user;
   }, {}), {where: {id: uriParams.id}}).then((e)=> {
-    $resp.writeNoContent(resp, $resp.Type.JSON);
+    resp.respondMessageJson(HttpStatus.NO_CONTENT);
   }).catch((e)=> {
-    $resp.writeBadRequest(resp, $resp.Type.JSON);
+    resp.respondMessageJson(HttpStatus.BAD_REQUEST);
   });
 };

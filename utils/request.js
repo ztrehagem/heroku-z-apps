@@ -12,8 +12,8 @@ $.sync = (req)=> {
       strbuf.push(chunk);
     });
     req.on('end', ()=> {
-      req.body = strbuf.join('');
-      resolve(req);
+      var body = req.body = strbuf.join('');
+      resolve(body);
     });
     req.on('error', ()=> {
       reject();
