@@ -1,9 +1,11 @@
 require('app-module-path').addPath(__dirname);
+require('globals');
 
 var HTTP = require('http');
 
-initEntities().then(startServer).catch(()=> {
+initEntities().then(startServer).catch((e)=> {
   console.error('failed starting server');
+  console.error(e);
 });
 
 // --
