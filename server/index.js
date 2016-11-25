@@ -2,27 +2,27 @@ var URL = require('url');
 var PATH = require('path');
 var router = initRouter();
 var fileServer = new (require('node-static').Server)('public');
-var $resp = require('utils/response');
-var $req = require('utils/request');
 const Request = require('./request');
 const Response = require('./response');
 
 module.exports = (req, resp)=> {
   try {
+    req = new Request(req);
+    resp = new Response(resp);
     handle(req, resp);
   } catch (e) {
-    console.error('Internal Server Error', e);
-    $resp.writeInternalServerError(resp);
+    console.error('Handling Error', e);
+    resp.respondMessage(HttpStatus.INTERNAL_SERVER_ERROR);
   }
 };
 
 function handle(req, resp) {
-  console.log('------------ requested:', req.url);
+  console.log('------------ requested:', req.raw.url);
   route(req, resp);
 }
 
 function route(req, resp) {
-  var pathname = PATH.resolve(URL.parse(req.url).pathname);
+  var pathname = PATH.resolve(URL.parse(req.raw.url).pathname);
 
   if( pathname.startsWith('/api/') )
     routeScripts(req, resp, pathname);
@@ -31,16 +31,17 @@ function route(req, resp) {
 }
 
 function routeScripts(req, resp, pathname) {
-  var route = router.route(req.method, pathname);
+  var route = router.route(req.raw.method, pathname);
 
   if( route && typeof route.controller == 'function' ) {
-    new Request(req).sync().then((req)=> {
-      route.controller(req, new Response(resp), route.params);
+    req.sync().then(()=> {
+      route.controller(req, resp, route.params);
     }).catch(()=> {
-      $resp.writeInternalServerError(resp);
+      console.warn('request sync error');
+      resp.respondMessageJson(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   } else {
-    $resp.writeNotFound(resp);
+    resp.respondMessageJson(HttpStatus.NOT_FOUND);
   }
 }
 
@@ -49,13 +50,13 @@ function routeStatics(req, resp, pathname) {
     var match = pathname.match(/^\/(\w+?)(?:\/.*)?$/);
     var filename = (match ? `/${match[0]}` : '') + '/index.html';
     console.log('serve index file', filename);
-    fileServer.serveFile(filename, 200, {}, req, resp).on('error', ()=> {
-      $resp.writeNotFound(resp);
+    fileServer.serveFile(filename, 200, {}, req.raw, resp.raw).on('error', ()=> {
+      resp.respondMessage(HttpStatus.NOT_FOUND);
     });
   } else {
     console.log('serve static file');
-    fileServer.serve(req, resp, (e, res)=> {
-      if( e && e.status == 404 ) return $resp.writeNotFound(resp);
+    fileServer.serve(req.raw, resp.raw, (e, res)=> {
+      if (e && e.status == 404) return resp.respondMessage(HttpStatus.NOT_FOUND);
     });
   }
 }

@@ -1,7 +1,5 @@
 var ctrl = exports;
 var db = require('models');
-var $resp = require('utils/response');
-var $req = require('utils/request');
 var Serializer = require('serializer');
 
 const ACCEPT_PARAMS = ['name', 'displayName', 'bio'];
