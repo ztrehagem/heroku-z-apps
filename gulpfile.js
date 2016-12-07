@@ -2,7 +2,7 @@ const Zelixir = require('z-elixir');
 const Resource = Zelixir.Resource;
 const Task = Zelixir.Task;
 
-const JS_APP_NAMES = ['root', 'shift'];
+const JS_APP_NAMES = ['root', 'shift', 'geister'];
 
 Resource('html', Resource.template('html'));
 Resource('sass', Resource.template('sass'));
