@@ -27,7 +27,7 @@
     "require-dir": "^0.3.0",
     "sequelize": "^3.24.1",
     "sequelize-cli": "^2.4.0",
-    "z-elixir": "git+https://github.com/ztrehagem/z-elixir.git#1.0.0",
+    "z-elixir": "git+https://github.com/ztrehagem/z-elixir.git#v1.1.0",
     "z-router": "^1.2.1"
   }
 }
