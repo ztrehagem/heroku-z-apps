@@ -2,6 +2,14 @@ var ns = require('z-router').namespace;
 
 module.exports = ns('root', [
   ns('api', [
+    ns('geister', [
+      ns('v1', [
+        ns('rooms', {
+          '': {GET: 'index', POST: 'create'},
+          ':id': {GET: 'view', POST: 'join', DELETE: 'leave'}
+        })
+      ])
+    ]),
     ns('shift', [
       ns('v1', [
         ns('users', {

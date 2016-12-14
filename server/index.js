@@ -7,9 +7,7 @@ const Response = require('./response');
 
 module.exports = (req, resp)=> {
   try {
-    req = new Request(req);
-    resp = new Response(resp);
-    handle(req, resp);
+    handle(new Request(req), new Response(resp));
   } catch (e) {
     console.error('Handling Error', e);
     resp.respondMessage(HttpStatus.INTERNAL_SERVER_ERROR);

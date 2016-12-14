@@ -4,10 +4,13 @@
   <meta charset="utf-8">
   <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
   <script src="http://npmcdn.com/angular-ui-router/release/angular-ui-router.min.js"></script>
+  <script src="/socket.io/socket.io.js" charset="utf-8"></script>
   <script src="/js/geister.js" charset="utf-8"></script>
   <title>geister</title>
 </head>
-<body>
-  test
+<body ng-controller="rootCtrl as ctrl">
+  <button type="button" ng-click="ctrl.createRoom()">create room</button>
+  <input type="text" ng-model="ctrl.roomId">
+  <button type="button" ng-click="ctrl.getRoom()">get room</button>
 </body>
 </html>

@@ -1,7 +1,7 @@
 require('app-module-path').addPath(__dirname);
 require('globals');
 
-var HTTP = require('http');
+const HTTP = require('http');
 
 initEntities().then(startServer).catch((e)=> {
   console.error('failed starting server');
@@ -15,7 +15,9 @@ function initEntities() {
 }
 
 function startServer() {
-  var server = require('server');
-  HTTP.createServer(server).listen(process.env.PORT);
+  var server = HTTP.createServer(require('server'));
+  require('socket')(server);
+  server.listen(process.env.PORT);
   console.log('server has started');
+  console.log(require('serializer'));
 }
