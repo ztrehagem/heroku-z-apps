@@ -1,23 +1,17 @@
 const Utils = require('utils');
+const UUID = require('uuid/v4');
 
 const ROOMS = {};
 
 exports.createRoom = function() {
-  var id = null;
-
-  do id = hash(); while (ROOMS[id]);
-  var room = ROOMS[id] = {
-    id: id,
-    createdAt: Date.now()
-  };
-  touch(room);
-
+  var room = new Room();
+  ROOMS[room.id] = room;
   return room;
 };
 
 exports.getRoom = function(id) {
   var room = ROOMS[id];
-  if (room) touch(room);
+  if (room) room.touch();
   return room;
 };
 
@@ -25,18 +19,18 @@ exports.getRooms = function() {
   return Utils.values(ROOMS);
 };
 
-function touch(room) {
-  if (room.timeout) clearTimeout(room.timeout);
-  room.timeout = setTimeout(function() {
-    delete ROOMS[room.id];
-  }, 1000 * 60 * 10); // 10 minutes
-  room.touchedAt = Date.now();
-}
+class Room {
+  constructor() {
+    do this.id = UUID(); while (ROOMS[this.id]);
+    this.touch();
+    this.createdAt = this.touchedAt;
+  }
 
-var id = 0;
-
-function hash() {
-  var shasum = require('crypto').createHash('sha1');
-  shasum.update(require('dateformat')(new Date(), 'yyyymmddHHMMss'));
-  return shasum.digest('hex');
+  touch() {
+    if (this.timeout) clearTimeout(this.timeout);
+    this.timeout = setTimeout(function() {
+      delete ROOMS[this.id];
+    }, 1000 * 60 * 10); // 10 minutes
+    this.touchedAt = Date.now();
+  }
 }

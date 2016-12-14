@@ -19,5 +19,4 @@ function startServer() {
   require('socket')(server);
   server.listen(process.env.PORT);
   console.log('server has started');
-  console.log(require('serializer'));
 }

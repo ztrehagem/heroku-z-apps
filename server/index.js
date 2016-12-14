@@ -4,6 +4,8 @@ var router = initRouter();
 var fileServer = new (require('node-static').Server)('public');
 const Request = require('./request');
 const Response = require('./response');
+const Session = require('./session');
+const Cookie = require('cookie');
 
 module.exports = (req, resp)=> {
   try {
@@ -16,16 +18,31 @@ module.exports = (req, resp)=> {
 
 function handle(req, resp) {
   console.log('------------ requested:', req.raw.url);
+  configSession(req, resp);
   route(req, resp);
+}
+
+function configSession(req, resp) {
+  var cookie = req.raw.headers.cookie && Cookie.parse(req.raw.headers.cookie);
+  var sessionId = cookie && cookie.sessionId;
+  var session = null;
+  if (sessionId && (session = Session.getSession(sessionId))) {
+    Session.touch(session);
+  } else {
+    sessionId = Session.createSession().id;
+    resp.setHeader('Set-Cookie', Cookie.serialize('sessionId', sessionId));
+  }
 }
 
 function route(req, resp) {
   var pathname = PATH.resolve(URL.parse(req.raw.url).pathname);
 
-  if( pathname.startsWith('/api/') )
+  if( pathname.startsWith('/api/') ) {
     routeScripts(req, resp, pathname);
-  else
+  }
+  else {
     routeStatics(req, resp, pathname);
+  }
 }
 
 function routeScripts(req, resp, pathname) {

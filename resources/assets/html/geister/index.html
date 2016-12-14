@@ -9,8 +9,33 @@
   <title>geister</title>
 </head>
 <body ng-controller="rootCtrl as ctrl">
-  <button type="button" ng-click="ctrl.createRoom()">create room</button>
-  <input type="text" ng-model="ctrl.roomId">
-  <button type="button" ng-click="ctrl.getRoom()">get room</button>
+
+  <button type="button" ng-click="ctrl.reloadRooms()">更新</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>部屋ID</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="room in ctrl.rooms">
+        <td>{{room.id}}</td>
+        <td><button type="button" ng-click="ctrl.joinRoom(room.id)">入る</button></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <div>
+    <button type="button" ng-click="ctrl.createRoom()">部屋を作る</button>
+  </div>
+
+  <hr>
+
+  <div>
+    joinedRoomId: {{ctrl.joinedRoomId}}
+  </div>
 </body>
 </html>

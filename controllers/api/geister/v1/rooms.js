@@ -14,13 +14,13 @@ exports.create = function(req, resp, params) {
 };
 
 exports.view = function(req, resp, params) {
-
+  resp.respondMessageJson(HttpStatus.NO_CONTENT);
 };
 
 exports.join = function(req, resp, params) {
-
+  resp.respondMessageJson(HttpStatus.NO_CONTENT);
 };
 
 exports.leave = function(req, resp, params) {
-
+  resp.respondMessageJson(HttpStatus.NO_CONTENT);
 };

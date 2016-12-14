@@ -1,3 +1,8 @@
 var modules = {};
 
-modules.app = angular.module('app', []);
+modules.api = angular.module('api', []);
+modules.services = angular.module('services', []);
+modules.app = angular.module('app', [
+  'services',
+  'api'
+]);

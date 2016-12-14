@@ -25,4 +25,12 @@ module.exports = class Request {
   getBodyAsJson() {
     return JSON.parse(this.body);
   }
+
+  setSession(session) {
+    this.session = session;
+  }
+
+  getSession(session) {
+    return this.session;
+  }
 };
