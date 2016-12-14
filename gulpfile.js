@@ -1,6 +1,9 @@
 const Zelixir = require('z-elixir');
 const Resource = Zelixir.Resource;
 const Task = Zelixir.Task;
+const config = Zelixir.config;
+
+config.enabledNgAnnotate = true;
 
 const JS_APP_NAMES = ['root', 'shift', 'geister'];
 
