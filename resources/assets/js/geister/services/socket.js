@@ -6,17 +6,19 @@ modules.services
   var socket = io('/geister');
 
   this.on = function(name, fn) {
-    socket.on(name, function(resp) {
+    socket.on(name, function() {
+      var args = arguments;
       $rootScope.$apply(function() {
-        fn(resp);
+        if (angular.isFunction(fn)) fn.apply(socket, args);
       });
     });
   };
 
   this.emit = function(name, arg, fn) {
-    socket.emit(name, arg, function(resp) {
+    socket.emit(name, arg, function() {
+      var args = arguments;
       $rootScope.$apply(function() {
-        fn(resp);
+        if (angular.isFunction(fn)) fn.apply(socket, args);
       });
     });
   };

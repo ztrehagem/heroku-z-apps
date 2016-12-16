@@ -2,19 +2,24 @@ const rooms = require('./rooms');
 
 module.exports = function(io) {
   io.on('connection', (socket)=> {
-    console.log('connection of geister');
-    socket.emit('greeting', {message: 'this is geister namespace'});
 
-    socket.on('createRoom', function(_, cb) {
-      console.log('on createRoom', _);
-      var room = rooms.createRoom();
-      cb(room && room.id);
+    var joinedRoomId = null;
+
+    socket.on('joinRoom', function(roomId, cb) {
+      socket.join(roomId, function() {
+        joinedRoomId = roomId;
+        cb(true);
+      });
     });
 
-    socket.on('getRoom', function(roomId, cb) {
-      console.log('on getRoom', roomId);
-      var room = rooms.getRoom(roomId);
-      cb(room && room.id);
+    socket.on('user:message', function(message, cb) {
+      if (joinedRoomId) {
+        socket.to(joinedRoomId).emit('user:message', message);
+        cb(true);
+      } else {
+        cb(false);
+      }
     });
+
   });
 };

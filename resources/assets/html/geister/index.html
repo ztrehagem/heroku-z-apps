@@ -37,5 +37,17 @@
   <div>
     joinedRoomId: {{ctrl.joinedRoomId}}
   </div>
+
+  <div ng-if="ctrl.joinedRoomId">
+    <div>
+      <input type="text" ng-model="ctrl.inputMessage">
+      <button type="button" ng-click="ctrl.message()">message</button>
+    </div>
+    <div>
+      <div ng-repeat="message in ctrl.messages" style="border-top: 1px solid #ddd;">
+        {{message}}
+      </div>
+    </div>
+  </div>
 </body>
 </html>

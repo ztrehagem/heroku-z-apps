@@ -12,7 +12,9 @@ modules.api
   };
 
   this.createRoom = function() {
-    return $http.post(prefix);
+    return $http.post(prefix).then(function(resp) {
+      return resp.data;
+    });
   };
 
   this.joinRoom = function(roomId) {
