@@ -10,18 +10,33 @@
 </head>
 <body ng-controller="rootCtrl as ctrl">
 
+  <input type="text" ng-model="ctrl.newRoomName">
+  <button type="button" ng-click="ctrl.createRoom()" ng-disabled="!ctrl.newRoomName.length">部屋を作る</button>
+
+  <hr>
+
   <button type="button" ng-click="ctrl.reloadRooms()">更新</button>
 
-  <table>
+  <table border="1" style="border-collapse: collapse;">
+    <style media="screen">
+      td, th {
+        padding: 0.5em;
+      }
+    </style>
     <thead>
       <tr>
+        <th>部屋名</th>
+        <th>人数</th>
+        <th>参加</th>
         <th>部屋ID</th>
       </tr>
     </thead>
     <tbody>
       <tr ng-repeat="room in ctrl.rooms">
-        <td>{{room.id}}</td>
-        <td><button type="button" ng-click="ctrl.joinRoom(room.id)">入る</button></td>
+        <td>{{room.name}}</td>
+        <td>{{room.playerNum}}</td>
+        <td><button type="button" ng-click="ctrl.joinRoom(room.id)" ng-disabled="!room.canJoin">入る</button></td>
+        <td>{{room.id.substring(0, 8)}}</td>
       </tr>
     </tbody>
   </table>
@@ -29,16 +44,13 @@
   <hr>
 
   <div>
-    <button type="button" ng-click="ctrl.createRoom()">部屋を作る</button>
-  </div>
-
-  <hr>
-
-  <div>
-    joinedRoomId: {{ctrl.joinedRoomId}}
+    joinedRoomId: {{ctrl.joinedRoomId.substring(0, 8)}}
   </div>
 
   <div ng-if="ctrl.joinedRoomId">
+    <div>
+      <button type="button" ng-click="ctrl.play()">play</button>
+    </div>
     <div>
       <input type="text" ng-model="ctrl.inputMessage">
       <button type="button" ng-click="ctrl.message()">message</button>

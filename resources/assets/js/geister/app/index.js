@@ -1,8 +1,6 @@
-var socket = null;
-
 modules.app
 
-.controller('rootCtrl', function($scope, apiRooms, socket) {
+.controller('rootCtrl', function($scope, socket) {
   'ngInject';
 
   var ctrl = this;
@@ -11,45 +9,61 @@ modules.app
   ctrl.messages = [];
 
   ctrl.reloadRooms = function() {
-    apiRooms.getRooms().then(function(rooms) {
+    socket.emit('room:index', null, function(rooms) {
       ctrl.rooms = rooms;
     });
   };
 
   ctrl.createRoom = function() {
-    apiRooms.createRoom().then(function(room) {
-      socket.emit('joinRoom', room.id, function(isOk) {
-        if (isOk) ctrl.joinedRoomId = room.id;
-        ctrl.messages = [];
-      });
+    socket.emit('room:create', ctrl.newRoomName, function(room) {
+      if (!room) return;
+      console.log('room created', room);
+      ctrl.joinedRoomId = room.id;
+      ctrl.newRoomName = null;
+      clearMessages();
     });
   };
 
   ctrl.joinRoom = function(roomId) {
-    apiRooms.joinRoom(roomId).then(function() {
-      socket.emit('joinRoom', roomId, function(isOk) {
-        if (isOk) ctrl.joinedRoomId = roomId;
-        ctrl.messages = [];
-      });
+    socket.emit('room:join', roomId, function(room) {
+      if (room) ctrl.joinedRoomId = room.id;
+      console.log('joined room', room);
+      clearMessages();
     });
   };
 
   ctrl.message = function() {
     var message = ctrl.inputMessage;
-    console.log('sending message:', message);
     socket.emit('user:message', message, function(isOk) {
-      if (isOk) {
-        ctrl.messages.unshift(message);
-        ctrl.inputMessage = null;
-      }
+      if (isOk) addMessage(message);
     });
     ctrl.inputMessage = null;
   };
 
+  ctrl.play = function(details) {
+    socket.emit('user:play', {detail: 'hoge'}, function(accepted) {
+      console.log('mine:', accepted);
+    });
+  };
+
   socket.on('user:message', function(message) {
-    console.log('recieve message:', message);
-    ctrl.messages.unshift(message);
+    addMessage(message);
   });
+
+  socket.on('user:play', function(details) {
+    console.log('other:', details);
+  });
+
+  socket.on('user:joined', function(room) {
+    console.log('user:joined', room);
+  });
+
+  function clearMessages() {
+    ctrl.messages = [];
+  }
+  function addMessage(message) {
+    ctrl.messages.unshift(message);
+  }
 
   // -- initialize
   ctrl.reloadRooms();
