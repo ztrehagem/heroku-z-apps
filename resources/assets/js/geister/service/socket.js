@@ -1,6 +1,4 @@
-modules.services
-
-.service('socket', function($rootScope) {
+app.service('socket', function($rootScope) {
   'ngInject';
 
   var socket = io('/geister');

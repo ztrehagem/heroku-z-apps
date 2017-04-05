@@ -1,0 +1,7 @@
+<div>
+  <form name="form" ng-submit="ctrl.submit(form)" novalidate>
+    <label>name:</label>
+    <input type="text" name="name" ng-model="ctrl.model.name">
+    <button type="submit" ng-disabled="!ctrl.model.name.length">submit</button>
+  </form>
+</div>
