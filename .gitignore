@@ -5,3 +5,4 @@ public/css/*
 !public/css/lib/
 public/js/*
 !public/js/lib/
+dump.rdb

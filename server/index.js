@@ -1,15 +1,14 @@
-var URL = require('url');
-var PATH = require('path');
-var router = initRouter();
-var fileServer = new (require('node-static').Server)('public');
+const colors = require('utils/colors');
+const URL = require('url');
+const PATH = require('path');
+const fileServer = new (require('node-static').Server)('public');
+const router = require('./router');
 const Request = require('./request');
 const Response = require('./response');
-const Session = require('./session');
-const Cookie = require('cookie');
 
 module.exports = (req, resp)=> {
   try {
-    handle(new Request(req), new Response(resp));
+    handle(req, resp);
   } catch (e) {
     console.error('Handling Error', e);
     resp.respondMessage(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -17,67 +16,69 @@ module.exports = (req, resp)=> {
 };
 
 function handle(req, resp) {
-  console.log('------------ requested:', req.raw.url);
-  configSession(req, resp);
+  console.log(`${colors.yellow}<<< [req] ${req.url}${colors.reset}`);
   route(req, resp);
 }
 
-function configSession(req, resp) {
-  var cookie = req.raw.headers.cookie && Cookie.parse(req.raw.headers.cookie);
-  var sessionId = cookie && cookie.sessionId;
-  var session = null;
-  if (sessionId && (session = Session.getSession(sessionId))) {
-    Session.touch(session);
-  } else {
-    sessionId = Session.createSession().id;
-    resp.setHeader('Set-Cookie', Cookie.serialize('sessionId', sessionId));
-  }
-}
-
 function route(req, resp) {
-  var pathname = PATH.resolve(URL.parse(req.raw.url).pathname);
+  const pathname = URL.parse(req.url).pathname;
+  // const resolvedPathname = PATH.resolve();
 
-  if( pathname.startsWith('/api/') ) {
+  if( pathname.startsWith('/api/') )
     routeScripts(req, resp, pathname);
-  }
-  else {
+  else
     routeStatics(req, resp, pathname);
-  }
 }
 
 function routeScripts(req, resp, pathname) {
-  var route = router.route(req.raw.method, pathname);
+  const route = router.route(req.method, pathname);
 
   if( route && typeof route.controller == 'function' ) {
-    req.sync().then(()=> {
-      route.controller(req, resp, route.params);
+    req = new Request(req);
+    resp = new Response(resp);
+    req.assosiate(resp);
+
+    return req.sync().then(()=> {
+      try {
+        route.controller(req, resp, route.params);
+      } catch (e) {
+        console.warn(`${colors.red}# controller error${colors.reset}`);
+        resp.respondMessageJson(HttpStatus.INTERNAL_SERVER_ERROR);
+      }
     }).catch(()=> {
-      console.warn('request sync error');
+      console.warn(`${colors.red}# request sync error${colors.reset}`);
       resp.respondMessageJson(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   } else {
-    resp.respondMessageJson(HttpStatus.NOT_FOUND);
+    respond(resp, HttpStatus.NOT_FOUND);
   }
 }
 
 function routeStatics(req, resp, pathname) {
-  if( !PATH.extname(pathname).length ) {
-    var match = pathname.match(/^\/(\w+?)(?:\/.*)?$/);
-    var filename = (match ? `/${match[0]}` : '') + '/index.html';
-    console.log('serve index file', filename);
-    fileServer.serveFile(filename, 200, {}, req.raw, resp.raw).on('error', ()=> {
-      resp.respondMessage(HttpStatus.NOT_FOUND);
-    });
-  } else {
-    console.log('serve static file');
-    fileServer.serve(req.raw, resp.raw, (e, res)=> {
-      if (e && e.status == 404) return resp.respondMessage(HttpStatus.NOT_FOUND);
-    });
-  }
+  const match = /^\/[^./]+$/.test(pathname);
+
+  if (!match)
+    serveStaticFile(req, resp);
+  else
+    respond(resp, HttpStatus.FOUND, {[Response.Header.LOCATION]: `${pathname}/`});
 }
 
-function initRouter() {
-  var router = require('z-router')(require('server/routes'));
-  console.log(router.routesToString());
-  return router;
+function serveStaticFile(req, resp) {
+  fileServer.serve(req, resp, (e, res)=> {
+    if (e) respond(resp, e.status || HttpStatus.INTERNAL_SERVER_ERROR);
+    else console.log(`${colors.green}--- [res] static file${colors.reset}`);
+  });
+}
+
+function respond(resp, status, headers = {}) {
+  headers[Response.Header.CONTENT_TYPE] = headers[Response.Header.CONTENT_TYPE] || ContentType.TEXT;
+
+  console.log(`${colors.green}--- [res] ${status}${colors.reset}`);
+  console.log(`${colors.green}${JSON.stringify(headers)}${colors.reset}`);
+
+  Object.keys(headers).forEach((key)=> {
+    resp.setHeader(key, headers[key]);
+  });
+  resp.writeHead(status);
+  resp.end(HttpStatus[status]);
 }
