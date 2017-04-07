@@ -1,4 +1,5 @@
 const colors = require('utils/colors');
+const log = require('utils/log');
 const URL = require('url');
 const PATH = require('path');
 const fileServer = new (require('node-static').Server)('public');
@@ -16,7 +17,7 @@ module.exports = (req, resp)=> {
 };
 
 function handle(req, resp) {
-  console.log(`${colors.yellow}<<< [req] ${req.url}${colors.reset}`);
+  console.log(`${colors.yellow}${log.REQ} ${req.url}${colors.reset}`);
   route(req, resp);
 }
 
@@ -42,11 +43,11 @@ function routeScripts(req, resp, pathname) {
       try {
         route.controller(req, resp, route.params);
       } catch (e) {
-        console.warn(`${colors.red}# controller error${colors.reset}`);
+        console.warn(`${colors.bgRed}# controller error${colors.reset}`);
         resp.respondMessageJson(HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }).catch(()=> {
-      console.warn(`${colors.red}# request sync error${colors.reset}`);
+      console.warn(`${colors.bgRed}# request sync error${colors.reset}`);
       resp.respondMessageJson(HttpStatus.INTERNAL_SERVER_ERROR);
     });
   } else {
@@ -66,14 +67,14 @@ function routeStatics(req, resp, pathname) {
 function serveStaticFile(req, resp) {
   fileServer.serve(req, resp, (e, res)=> {
     if (e) respond(resp, e.status || HttpStatus.INTERNAL_SERVER_ERROR);
-    else console.log(`${colors.green}--- [res] static file${colors.reset}`);
+    else console.log(`${colors.green}${log.RES} static file${colors.reset}`);
   });
 }
 
 function respond(resp, status, headers = {}) {
   headers[Response.Header.CONTENT_TYPE] = headers[Response.Header.CONTENT_TYPE] || ContentType.TEXT;
 
-  console.log(`${colors.green}--- [res] ${status}${colors.reset}`);
+  console.log(`${colors.green}${log.RES} ${status}${colors.reset}`);
   console.log(`${colors.green}${JSON.stringify(headers)}${colors.reset}`);
 
   Object.keys(headers).forEach((key)=> {

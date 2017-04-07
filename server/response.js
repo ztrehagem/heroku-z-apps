@@ -1,4 +1,5 @@
 const colors = require('utils/colors');
+const log = require('utils/log');
 const Cookie = require('cookie');
 const Request = require('./request');
 
@@ -37,7 +38,7 @@ module.exports = class Response {
   respond(body, status, contentType) {
     contentType = contentType || ContentType.TEXT;
     status = status || HttpStatus.OK;
-    console.log(`${colors.cyan}--- [res] ${status} ${contentType}${colors.reset}`);
+    console.log(`${colors.cyan}${log.RES} ${status} ${contentType}${colors.reset}`);
     if (body) console.log(`${colors.cyan}${body}${colors.reset}`);
     this.setContentType(contentType);
     this.setSessionToken();

@@ -1,3 +1,4 @@
+const colors = require('utils/colors');
 const Session = require('./session');
 const cookie = require('cookie');
 
@@ -14,11 +15,16 @@ module.exports = class Request {
       return this.raw.headers.cookie && cookie.parse(this.raw.headers.cookie);
     })();
 
-    this.session = (()=> {
+    this.sessionPromise = (()=> {
       const token = this.cookie && this.cookie[Cookie.TOKEN];
-      const session = token && token.length && Session.get(token);
-      return session || Session.create();
-    })();
+      if (token) {
+        return Session.get(token).then(session => session || Session.create());
+      } else {
+        return Session.create();
+      }
+    })()
+    .then(session => this.session = session)
+    .catch(err => console.warn(colors.bgRed + '# missing session' + colors.reset));
   }
 
   static get Cookie() {
@@ -31,20 +37,23 @@ module.exports = class Request {
   }
 
   sync() {
-    return new Promise((resolve, reject)=> {
-      var strbuf = [];
-      this.raw.on('data', (chunk)=> {
-        strbuf.push(chunk);
-      });
-      this.raw.on('end', ()=> {
-        this.body = strbuf.join('');
-        resolve(this);
-      });
-      this.raw.on('error', ()=> {
-        console.log('reject', strbuf);
-        reject();
-      });
-    });
+    return Promise.all([
+      new Promise((resolve, reject)=> {
+        var strbuf = [];
+        this.raw.on('data', (chunk)=> {
+          strbuf.push(chunk);
+        });
+        this.raw.on('end', ()=> {
+          this.body = strbuf.join('');
+          resolve();
+        });
+        this.raw.on('error', ()=> {
+          console.warn(colors.bgRed + '# sync request body error', strbuf, colors.reset);
+          reject();
+        });
+      }),
+      this.sessionPromise.then(session => this.session = session)
+    ]).then(()=> this);
   }
 
   getBodyAsJson() {

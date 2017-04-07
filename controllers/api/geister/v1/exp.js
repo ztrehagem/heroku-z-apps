@@ -1,4 +1,6 @@
 exports.get = (req, resp, params)=> {
+  console.log('session');
+  console.log(req.session);
   resp.respondMessageJson(HttpStatus.NO_CONTENT);
 };
 
