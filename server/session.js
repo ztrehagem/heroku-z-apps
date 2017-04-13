@@ -1,5 +1,6 @@
-const redis = require('./redis');
+const redis = require('server/redis');
 const utils = require('utils');
+const redisUtils = require('utils/redis');
 const colors = require('utils/colors');
 const UUID = require('uuid/v4');
 
@@ -19,7 +20,10 @@ module.exports = class Session {
 
   static create() {
     const token = UUID();
-    const raw = {[CREATED_AT]: new Date().toUTCString()};
+    const raw = redisUtils.buildHash({
+      [CREATED_AT]: new Date().toUTCString(),
+      id: UUID()
+    });
     const values = utils.joinArray(utils.objectToArray(raw));
     const key = MAKE_KEY(token);
 
@@ -31,16 +35,6 @@ module.exports = class Session {
 
   constructor(token, raw) {
     this.token = token;
-    this.data = {};
-    Object.keys(raw).forEach((rawKey)=> {
-      const value = raw[rawKey];
-      const match = rawKey.match(/[^:]+/g);
-      if (!match || !match.length) return;
-      const key = match.pop();
-      const namespaces = match;
-      namespaces.reduce((target, namespace)=> {
-        return (target[namespace] = target[namespace] || {});
-      }, this.data)[key] = value;
-    });
+    this.data = redisUtils.parseHash(raw);
   }
 };

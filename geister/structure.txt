@@ -1,0 +1,22 @@
+[HASH] メタデータ
+  geister:room:[token]
+    player.host: session id
+    player.guest: session id
+    ready.host: 0/1
+    ready.guest: 0/1
+    first: 'host' / 'guest'
+    finish: 0/1
+
+[LIST]
+  geister:field:[token]
+    0  = なし
+    h+ = host good
+    h- = host bad
+    g+ = guest good
+    g- = guest bad
+
+[LIST]
+  geister:moves:[token]
+    h+:0,2:0,3 = 0,2にいるコマ(h+)を0,3に動かす
+    h+:0,2:0,3:g- = 0,2にいるコマ(h+)を0,3に動かしてg-を取る
+    h+:0,0:exit = 0,0にいるコマ(h+)を脱出させる
