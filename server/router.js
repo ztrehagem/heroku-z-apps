@@ -12,6 +12,9 @@ const router = module.exports = ZRouter(((ns)=>
             '': {GET: 'index', POST: 'create'},
             ':token': {POST: 'join'},
             ':token/leave': {POST: 'leave'}
+          }),
+          ns('me', {
+            '': {GET: 'get', PUT: 'update'}
           })
         ])
       ]),

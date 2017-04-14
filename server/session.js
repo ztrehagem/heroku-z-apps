@@ -9,6 +9,11 @@ const CREATED_AT = 'createdAt';
 const EXPIRE = '' + (60 * 60 * 2); // 2h
 const MAKE_KEY = token => `${KEY_PREFIX}:${token}`;
 
+const execAsyncTouch = (key, fn)=>
+  fn(redis.multi())
+  .expire(key, EXPIRE)
+  .execAsync();
+
 module.exports = class Session {
   static get(token) {
     const key = MAKE_KEY(token);
@@ -36,5 +41,28 @@ module.exports = class Session {
   constructor(token, raw) {
     this.token = token;
     this.data = redisUtils.parseHash(raw);
+  }
+
+  serializeForMe(target) {
+    const s = {
+      geister: (o => o && {
+        name: o.name
+      })(this.data.geister)
+    };
+    return target ? s[target] : s;
+  }
+
+  put(field, value) {
+    const key = MAKE_KEY(this.token);
+    return execAsyncTouch(key, m => m.hset(key, field, value))
+      .then(replies => Object.assign(this.data, redisUtils.parseHash({[field]: value})))
+      .then(()=> this);
+  }
+
+  reload() {
+    const key = MAKE_KEY(this.token);
+    return execAsyncTouch(key, m => m.hgetall(key))
+      .then(replies => Object.assign(this.data, redisUtils.parseHash(replies[0])))
+      .then(()=> this);
   }
 };

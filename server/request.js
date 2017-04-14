@@ -59,7 +59,7 @@ module.exports = class Request {
     .catch(err => console.warn(colors.bgRed + '# missing session' + colors.reset));
   }
 
-  getBodyAsJson() {
+  get bodyJson() {
     return JSON.parse(this.body);
   }
 };

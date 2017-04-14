@@ -1,9 +1,13 @@
-app.controller('root', function($scope, apiUser, apiRooms) {
+app.controller('root', function($scope, apiMe, apiRooms) {
   'ngInject';
 
+  this.updateName = ()=> {
+    apiMe.updateName(this.model.name).then(resp => this.model.name = resp.name);
+  };
+
   this.createRoom = ()=> {
-    apiRooms.create().then(token => {
-      console.log('created new room:', token);
+    apiRooms.create().then(room => {
+      console.log('created new room:', room);
     });
   };
 
@@ -12,5 +16,9 @@ app.controller('root', function($scope, apiUser, apiRooms) {
   };
 
 
+  //-- initializes
+
+  this.model = {};
+  apiMe.get().then(resp => this.model.name = resp.name);
   this.reload();
 });
