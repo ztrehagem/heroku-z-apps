@@ -6,7 +6,12 @@ const router = module.exports = ZRouter(((ns)=>
       ns('geister', [
         ns('v1', [
           ns('exp', {
-            '': {GET: 'get', PUT: 'put', DELETE: 'delete'}
+            '': {GET: 'get', POST: 'post', PUT: 'put', DELETE: 'delete'}
+          }),
+          ns('rooms', {
+            '': {GET: 'index', POST: 'create'},
+            ':token': {POST: 'join'},
+            ':token/leave': {POST: 'leave'}
           })
         ])
       ]),

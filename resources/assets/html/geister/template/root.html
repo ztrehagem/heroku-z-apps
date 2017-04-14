@@ -13,6 +13,25 @@
 </div>
 
 <div>
-  <button type="button" ng-click="ctrl.get()">get</button>
-  <button type="button" ng-click="ctrl.delete()">delete</button>
+  <button type="button" ng-click="ctrl.createRoom()">createRoom</button>
+  <button type="button" ng-click="ctrl.reload()">getRooms</button>
 </div>
+
+<hr>
+
+<table border="1">
+  <thead>
+    <tr>
+      <th>join</th>
+      <th>token</th>
+      <th>createdAt</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr ng-repeat="room in rooms">
+      <td><button type="button" ng-disabled="!room.accepting">join</button></td>
+      <td>{{room.token}}</td>
+      <td>{{room.createdAt}}</td>
+    </tr>
+  </tbody>
+</table>

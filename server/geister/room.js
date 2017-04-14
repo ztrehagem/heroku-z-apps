@@ -17,9 +17,20 @@ const execAsyncTouch = (fn, token)=>
   fn(redis.multi())
   .expire(MAKE_KEY_ROOM(token), EXPIRE)
   .expire(MAKE_KEY_MOVES(token), EXPIRE)
-  .expire(MAKE_KEY_FIELD(token), EXPIRE);
+  .expire(MAKE_KEY_FIELD(token), EXPIRE)
+  .execAsync();
 
 module.exports = class Room {
+  static index() {
+    return redis.keysAsync(MAKE_KEY_ROOM('*'))
+      .then(keys => Promise.all(keys.map(key => redis.hgetallAsync(key).then(reply => ({
+        token: new RegExp(`^${MAKE_KEY_ROOM('(.*)')}$`).exec(key)[1],
+        raw: reply
+      })))))
+      .then(results => results.map(r => new Room(r.token, r.raw)))
+      .catch(err => null);
+  }
+
   static getFull(token) {
     const rkey = MAKE_KEY_ROOM(token);
     const fkey = MAKE_KEY_FIELD(token);
@@ -56,13 +67,31 @@ module.exports = class Room {
       .then((replies)=> {
         console.log('# created new geister-room');
         return new Room(token, rawRoom);
+      })
+      .catch((err)=> {
+        console.warn('# couldnt create new geister-room');
+        console.warn(err);
+        return null;
       });
   }
 
   constructor(token, rawRoom, rawField, rawMoves) {
     this.token = token;
-    this.room = rawRoom && redisUtils.parseHash(rawRoom);
-    this.field = rawField;
-    this.moves = rawMoves;
+    this._room = rawRoom && redisUtils.parseHash(rawRoom);
+    this._field = rawField;
+    this._moves = rawMoves;
+  }
+
+  serializeSummary() {
+    return {
+      token: this.token,
+      createdAt: this._room.createdAt,
+      accepting: this.accepting
+    };
+  }
+
+  get accepting() {
+    return this._room &&
+      (!!this._room.player.host && !this._room.player.guest);
   }
 };

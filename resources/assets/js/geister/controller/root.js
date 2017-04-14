@@ -1,23 +1,16 @@
-app.controller('root', function(apiUser, apiExp) {
+app.controller('root', function($scope, apiUser, apiRooms) {
   'ngInject';
 
-  this.model = {};
-
-  this.submit = (form) => {
-    apiUser.updateName(this.model.name).then((resp)=> {
-      console.log(resp);
+  this.createRoom = ()=> {
+    apiRooms.create().then(token => {
+      console.log('created new room:', token);
     });
   };
 
-  this.get = ()=> {
-    apiExp.get().then((resp)=> {
-      console.log(resp);
-    });
+  this.reload = ()=> {
+    return apiRooms.index().then(rooms => $scope.rooms = rooms);
   };
 
-  this.delete = ()=> {
-    apiExp.delete().then((resp)=> {
-      console.log(resp);
-    });
-  };
+
+  this.reload();
 });

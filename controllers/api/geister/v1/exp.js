@@ -1,6 +1,10 @@
+const ROOM = require('server/geister/room');
+
 exports.get = (req, resp, params)=> {
-  console.log('session');
-  console.log(req.session);
+  resp.respondMessageJson(HttpStatus.NO_CONTENT);
+};
+
+exports.post = (req, resp, params)=> {
   resp.respondMessageJson(HttpStatus.NO_CONTENT);
 };
 
