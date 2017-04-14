@@ -15,6 +15,15 @@ app.controller('root', function($scope, apiMe, apiRooms) {
     return apiRooms.index().then(rooms => $scope.rooms = rooms);
   };
 
+  this.join = (room)=> {
+    const token = room.token;
+    apiRooms.join(room.token).then(resp => {
+      console.log('join ok', resp);
+    }).catch(resp => {
+      console.log('join failed', resp);
+    });
+  };
+
 
   //-- initializes
 

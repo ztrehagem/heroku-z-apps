@@ -52,12 +52,15 @@ module.exports = class Room {
       .then(replies => new Room(token, null, replies[0], replies[1]));
   }
 
-  static create(hostId) {
+  static create(hostId, hostName) {
     const token = UUID();
     const rawRoom = redisUtils.buildHash({
       [CREATED_AT]: new Date().toUTCString(),
       player: {
         host: hostId
+      },
+      playerName: {
+        host: hostName
       }
     });
     const values = utils.joinArray(utils.objectToArray(rawRoom));
@@ -73,6 +76,14 @@ module.exports = class Room {
         console.warn(err);
         return null;
       });
+  }
+
+  static join(token, guestId, guestName) {
+    const key = MAKE_KEY_ROOM(token);
+    return redis.hgetAsync(key, 'player:host')
+      .then(reply => (reply != guestId) ? Promise.resolve() : Promise.reject())
+      .then(()=> execAsyncTouch(m => m.hsetnx(key, 'player:guest', guestId).hsetnx(key, 'playerName:guest', guestName), token))
+      .then(replies => (replies[0] == 1) ? Promise.resolve() : Promise.reject());
   }
 
   constructor(token, rawRoom, rawField, rawMoves) {

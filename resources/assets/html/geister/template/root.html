@@ -29,7 +29,7 @@
   </thead>
   <tbody>
     <tr ng-repeat="room in rooms">
-      <td><button type="button" ng-disabled="!room.accepting">join</button></td>
+      <td><button type="button" ng-disabled="!room.accepting" ng-click="ctrl.join(room)">join</button></td>
       <td>{{room.token}}</td>
       <td>{{room.createdAt}}</td>
     </tr>

@@ -44,6 +44,7 @@ function routeScripts(req, resp, pathname) {
         route.controller(req, resp, route.params);
       } catch (e) {
         console.warn(`${colors.bgRed}# controller error${colors.reset}`);
+        console.warn(e);
         resp.respondMessageJson(HttpStatus.INTERNAL_SERVER_ERROR);
       }
     }).catch(()=> {
