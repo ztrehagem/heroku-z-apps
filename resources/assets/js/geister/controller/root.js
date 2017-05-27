@@ -1,4 +1,4 @@
-app.controller('root', function($scope, apiMe, apiRooms) {
+app.controller('root', function($scope, $state, apiMe, apiRooms) {
   'ngInject';
 
   this.updateName = ()=> {
@@ -8,6 +8,7 @@ app.controller('root', function($scope, apiMe, apiRooms) {
   this.createRoom = ()=> {
     apiRooms.create().then(room => {
       console.log('created new room:', room);
+      $state.go('room', {token: room.token});
     });
   };
 

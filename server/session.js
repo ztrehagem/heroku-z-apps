@@ -44,12 +44,18 @@ module.exports = class Session {
   }
 
   serializeForMe(target) {
-    const s = {
-      geister: (o => o && {
-        name: o.name
-      })(this.data.geister)
-    };
-    return target ? s[target] : s;
+    switch (target) {
+      case 'geister': return this.serializeForMeGeister();
+      default: return {};
+    }
+  }
+
+  serializeForMeGeister() {
+    return (d => d && Object.assign({
+      id: d.id,
+    }, (g => g && {
+      name: g.name,
+    })(d.geister)))(this.data);
   }
 
   put(field, value) {

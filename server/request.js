@@ -60,6 +60,6 @@ module.exports = class Request {
   }
 
   get bodyJson() {
-    return JSON.parse(this.body);
+    return this._bodyJson || (this._bodyJson = JSON.parse(this.body));
   }
 };

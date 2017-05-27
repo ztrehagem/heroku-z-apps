@@ -3,21 +3,15 @@ app.service('socket', function($rootScope) {
 
   var socket = io('/geister');
 
-  this.on = function(name, fn) {
-    socket.on(name, function() {
-      var args = arguments;
-      $rootScope.$apply(function() {
-        if (angular.isFunction(fn)) fn.apply(socket, args);
-      });
-    });
+  this.on = (name, fn)=> {
+    socket.on(name, fn && ((...args)=> {
+      $rootScope.$apply(()=> fn(...args));
+    }));
   };
 
-  this.emit = function(name, arg, fn) {
-    socket.emit(name, arg, function() {
-      var args = arguments;
-      $rootScope.$apply(function() {
-        if (angular.isFunction(fn)) fn.apply(socket, args);
-      });
-    });
+  this.emit = (name, arg, fn)=> {
+    socket.emit(name, arg, fn && ((...args)=> {
+      $rootScope.$apply(()=> fn(...args));
+    }));
   };
 });
