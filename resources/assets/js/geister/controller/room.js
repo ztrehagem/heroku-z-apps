@@ -6,9 +6,20 @@ app.controller('room', function($state, socket, apiMe) {
     id: resp.id
   }, ok => {
     if (!ok) {
-      $state.go('root');
+      return $state.go('root');
     }
     console.log('succeeded joining socket room');
   }));
 
+  socket.on('joined:guest', (id)=> {
+    console.log('joined:guest', id);
+  });
+
+  socket.on('started', (o)=> {
+    console.log('started!', o);
+  });
+
+  this.ready = ()=> {
+    socket.emit('ready');
+  };
 });

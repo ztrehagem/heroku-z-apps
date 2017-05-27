@@ -1,11 +1,11 @@
 [HASH] メタデータ
   geister:room:[token]
-    player.host: session id
-    player.guest: session id
-    playerName.host: string
-    playerName.guest: string
-    ready.host: 0/1
-    ready.guest: 0/1
+    players.host.id
+    players.host.name
+    players.host.ready 0/1
+    players.guest.id
+    players.guest.name
+    players.guest.ready 0/1
     first: 'host' / 'guest'
     finish: 0/1
 

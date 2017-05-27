@@ -18,8 +18,9 @@ app.controller('root', function($scope, $state, apiMe, apiRooms) {
 
   this.join = (room)=> {
     const token = room.token;
-    apiRooms.join(room.token).then(resp => {
+    apiRooms.join(token).then(resp => {
       console.log('join ok', resp);
+      $state.go('room', {token: token});
     }).catch(resp => {
       console.log('join failed', resp);
     });

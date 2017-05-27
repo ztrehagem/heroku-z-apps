@@ -56,11 +56,8 @@ module.exports = class Room {
     const token = UUID();
     const rawRoom = redisUtils.buildHash({
       [CREATED_AT]: new Date().toUTCString(),
-      player: {
-        host: hostId
-      },
-      playerName: {
-        host: hostName
+      players: {
+        host: {id: hostId, name: hostName}
       }
     });
     const values = utils.joinArray(utils.objectToArray(rawRoom));
@@ -80,29 +77,70 @@ module.exports = class Room {
 
   static join(token, guestId, guestName) {
     const key = MAKE_KEY_ROOM(token);
-    return redis.hgetAsync(key, 'player:host')
+    return redis.hgetAsync(key, 'players:host:id')
       .then(reply => (reply != guestId) ? Promise.resolve() : Promise.reject())
-      .then(()=> execAsyncTouch(m => m.hsetnx(key, 'player:guest', guestId).hsetnx(key, 'playerName:guest', guestName), token))
+      .then(()=> execAsyncTouch(m => m.hsetnx(key, 'players:guest:id', guestId).hsetnx(key, 'players:guest:name', guestName), token))
       .then(replies => (replies[0] == 1) ? Promise.resolve() : Promise.reject());
   }
 
   constructor(token, rawRoom, rawField, rawMoves) {
     this.token = token;
-    this._room = rawRoom && redisUtils.parseHash(rawRoom);
-    this._field = rawField;
-    this._moves = rawMoves;
+    this.room = rawRoom && redisUtils.parseHash(rawRoom);
+    this.field = rawField;
+    this.moves = rawMoves;
+  }
+
+  updateSummary() {
+    return Room.getSummary(this.token).then(room => Object.assign(this, room));
   }
 
   serializeSummary() {
     return {
       token: this.token,
-      createdAt: this._room.createdAt,
+      createdAt: this.room.createdAt,
       accepting: this.accepting
     };
   }
 
   get accepting() {
-    return this._room &&
-      (!!this._room.player.host && !this._room.player.guest);
+    return this.room && this.room.players &&
+      (!!this.room.players.host && !this.room.players.guest);
+  }
+
+  get host() {
+    return this.room && this.room.players.host;
+  }
+
+  get guest() {
+    return this.room && this.room.players.guest;
+  }
+
+  isHost(id) {
+    return this.host && this.host.id == id;
+  }
+
+  isGuest(id) {
+    return this.guest && this.guest.id == id;
+  }
+
+  isPlayer(id) {
+    return this.isHost(id) || this.isGuest(id);
+  }
+
+  get isHostReady() {
+    return this.host && this.host.ready == '1';
+  }
+
+  get isGuestReady() {
+    return this.guest && this.guest.ready == '1';
+  }
+
+  get isStarted() {
+    return this.isHostReady && this.isGuestReady;
+  }
+
+  ready(userType) {
+    if (!['guest', 'host'].includes(userType)) return Promise.reject();
+    return execAsyncTouch(m => m.hset(MAKE_KEY_ROOM(this.token), `players:${userType}:ready`, 1));
   }
 };
