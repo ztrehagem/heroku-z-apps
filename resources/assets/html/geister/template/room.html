@@ -1,3 +1,8 @@
 <div>
-  <button type="button" ng-click="ctrl.ready()">ready</button>
+  <span>you are {{ctrl.userType}}</span>
+  <button type="button" ng-click="ctrl.doReady()" ng-if="ctrl.canReady()">ready</button>
+</div>
+
+<div>
+  {{ctrl.players | json}}
 </div>

@@ -16,23 +16,27 @@ module.exports = io => io.on('connection', socket => {
       if (!_room.isPlayer(userId)) return cb(false);
       token = data.token;
       room = _room;
-      socket.join(token, ()=> cb(true));
-      if (room.isHost(userId)) {
-        userType = UserType.HOST;
-      } else if (room.isGuest(userId)) {
-        userType = UserType.GUEST;
-        socket.to(token).emit('joined:guest', {id: userId});
-      }
+      socket.join(token, ()=> {
+        if (room.isHost(userId)) {
+          userType = UserType.HOST;
+        } else if (room.isGuest(userId)) {
+          userType = UserType.GUEST;
+          socket.to(token).emit('joined:guest', room.serializeSummary());
+        }
+        cb({userType, room: room.serializeSummary()});
+      });
     });
   });
 
-  socket.on('ready', ()=> {
-    room.ready(userType).then(()=> room.updateSummary()).then(()=> {
+  socket.on('ready', (data)=> {
+    room.ready(userType).then(()=> {
+      io.to(token).emit('ready', {userType});
+      return room.updateSummary();
+    }).then(()=> {
       if (room.isStarted) {
         io.to(token).emit('started');
-        // ここ自分以外にしかemitされない
       }
-    });
-  })
+    }).catch(()=> console.log('failed ready', userType));
+  });
 
 });

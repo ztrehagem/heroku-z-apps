@@ -98,7 +98,17 @@ module.exports = class Room {
     return {
       token: this.token,
       createdAt: this.room.createdAt,
-      accepting: this.accepting
+      accepting: this.accepting,
+      players: {
+        host: (h => h && {
+          name: h.name,
+          ready: h.ready
+        })(this.host),
+        guest: (g => g && {
+          name: g.name,
+          ready: g.ready
+        })(this.guest)
+      }
     };
   }
 
@@ -141,6 +151,8 @@ module.exports = class Room {
 
   ready(userType) {
     if (!['guest', 'host'].includes(userType)) return Promise.reject();
-    return execAsyncTouch(m => m.hset(MAKE_KEY_ROOM(this.token), `players:${userType}:ready`, 1));
+    return this.updateSummary().then(()=> {
+      if (!this.host || !this.guest) return Promise.reject();
+    }).then(()=> execAsyncTouch(m => m.hset(MAKE_KEY_ROOM(this.token), `players:${userType}:ready`, 1)));
   }
 };
