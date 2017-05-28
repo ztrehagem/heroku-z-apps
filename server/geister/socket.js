@@ -28,15 +28,13 @@ module.exports = io => io.on('connection', socket => {
     });
   });
 
-  socket.on('ready', (data)=> {
-    room.ready(userType).then(()=> {
-      io.to(token).emit('ready', {userType});
-      return room.updateSummary();
-    }).then(()=> {
-      if (room.isStarted) {
-        io.to(token).emit('started');
-      }
-    }).catch(()=> console.log('failed ready', userType));
+  socket.on('ready', (formation)=> {
+    room.updateSummary()
+      .then(()=> room.ready(userType, formation))
+      .then(()=> io.to(token).emit('ready', {userType}))
+      .then(()=> room.updateSummary())
+      .then(()=> room.isPlayable ? room.play().then(()=> io.to(token).emit('started')) : null)
+      .catch(()=> console.log('failed on ready', userType));
   });
 
 });

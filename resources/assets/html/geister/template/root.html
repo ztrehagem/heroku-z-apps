@@ -23,13 +23,16 @@
   <thead>
     <tr>
       <th>join</th>
+      <th>status</th>
       <th>token</th>
       <th>createdAt</th>
     </tr>
   </thead>
   <tbody>
     <tr ng-repeat="room in rooms">
-      <td><button type="button" ng-disabled="!room.accepting" ng-click="ctrl.join(room)">join</button></td>
+      <!-- TODO 参加ボタンはいつでも押せるようにする．参加してみて弾かれたら戻る -->
+      <td><button type="button" ng-disabled="room.status != 'accepting'" ng-click="ctrl.join(room)">join</button></td>
+      <td>{{room.status}}</td>
       <td>{{room.token}}</td>
       <td>{{room.createdAt}}</td>
     </tr>

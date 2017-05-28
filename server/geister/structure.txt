@@ -2,10 +2,10 @@
   geister:room:[token]
     players.host.id
     players.host.name
-    players.host.ready 0/1
+    players.host.formation Array
     players.guest.id
     players.guest.name
-    players.guest.ready 0/1
+    players.guest.formation Array
     first: 'host' / 'guest'
     finish: 0/1
 

@@ -30,10 +30,10 @@ app.controller('room', function($state, socket, apiMe) {
   });
 
   this.doReady = ()=> {
-    socket.emit('ready');
+    socket.emit('ready', [1, 0, 0, 1, 0, 1, 1, 0]); // 自コマの配置をset
   };
 
   this.canReady = ()=> {
-    return this.players.host && this.players.guest && !this.players[this.userType].ready;
+    return this.players[this.userType] && !this.players[this.userType].ready;
   };
 });
