@@ -42,6 +42,16 @@ module.exports = class Room {
       .then(replies => new Room(token, replies[0]));
   }
 
+  static getField(token) {
+    const key = KEY_FIELD(token);
+    return execAsyncTouch(token, m => m.lrange(key, 0, -1))
+      .then(replies => {
+        console.log(replies);
+        return replies;
+      })
+      .then(replies => new Room(token, null, replies[0]));
+  }
+
   static getDetails(token) {
     const fkey = KEY_FIELD(token);
     const mkey = KEY_MOVES(token);
@@ -82,13 +92,18 @@ module.exports = class Room {
 
   constructor(token, rawRoom, rawField, rawMoves) {
     this.token = token;
+    // TODO room->summary
     this.room = rawRoom && redisUtils.parseHash(rawRoom);
     this.field = rawField;
     this.moves = rawMoves;
   }
 
   updateSummary() {
-    return Room.getSummary(this.token).then(room => Object.assign(this, room));
+    return Room.getSummary(this.token).then(room => Object.assign(this, {room: room.room}));
+  }
+
+  updateField() {
+    return Room.getField(this.token).then(room => Object.assign(this, {field: room.field}));
   }
 
   serializeSummary() {
