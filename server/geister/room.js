@@ -10,7 +10,7 @@ const KEY_ROOM = token => `${KEY_PREFIX}:room:${token}`;
 const KEY_FIELD = token => `${KEY_PREFIX}:field:${token}`;
 const KEY_MOVES = token => `${KEY_PREFIX}:moves:${token}`;
 
-const execAsyncTouch = (fn, token)=>
+const execAsyncTouch = (token, fn)=>
   fn(redis.multi())
   .expire(KEY_ROOM(token), EXPIRE)
   .expire(KEY_MOVES(token), EXPIRE)
@@ -32,20 +32,20 @@ module.exports = class Room {
     const rkey = KEY_ROOM(token);
     const fkey = KEY_FIELD(token);
     const mkey = KEY_MOVES(token);
-    return execAsyncTouch(m => m.hgetall(rkey).lrange(fkey, 0, -1).lrange(mkey, 0, -1), token)
+    return execAsyncTouch(token, m => m.hgetall(rkey).lrange(fkey, 0, -1).lrange(mkey, 0, -1))
       .then(replies => new Room(token, replies[0], replies[1], replies[2]));
   }
 
   static getSummary(token) {
     const key = KEY_ROOM(token);
-    return execAsyncTouch(m => m.hgetall(key), token)
+    return execAsyncTouch(token, m => m.hgetall(key))
       .then(replies => new Room(token, replies[0]));
   }
 
   static getDetails(token) {
     const fkey = KEY_FIELD(token);
     const mkey = KEY_MOVES(token);
-    return execAsyncTouch(m => m.lrange(fkey, 0, -1).lrange(mkey, 0, -1), token)
+    return execAsyncTouch(token, m => m.lrange(fkey, 0, -1).lrange(mkey, 0, -1))
       .then(replies => new Room(token, null, replies[0], replies[1]));
   }
 
@@ -60,7 +60,7 @@ module.exports = class Room {
     const values = utils.joinArray(utils.objectToArray(rawRoom));
     const key = KEY_ROOM(token);
 
-    return execAsyncTouch(m => m.hmset(key, values), token)
+    return execAsyncTouch(token, m => m.hmset(key, values))
       .then((replies)=> {
         console.log('# created new geister-room');
         return new Room(token, rawRoom);
@@ -76,7 +76,7 @@ module.exports = class Room {
     const key = KEY_ROOM(token);
     return redis.hgetAsync(key, 'players:host:id')
       .then(reply => (reply != guestId) ? Promise.resolve() : Promise.reject())
-      .then(()=> execAsyncTouch(m => m.hsetnx(key, 'players:guest:id', guestId).hsetnx(key, 'players:guest:name', guestName), token))
+      .then(()=> execAsyncTouch(token, m => m.hsetnx(key, 'players:guest:id', guestId).hsetnx(key, 'players:guest:name', guestName)))
       .then(replies => (replies[0] == 1) ? Promise.resolve() : Promise.reject());
   }
 
@@ -172,7 +172,7 @@ module.exports = class Room {
     if (!['guest', 'host'].includes(userType)) {
       return Promise.reject();
     }
-    return execAsyncTouch(m =>
+    return execAsyncTouch(this.token, m =>
       m.hset(KEY_ROOM(this.token), `players:${userType}:formation`, `[${formation.join(',')}]`)
     );
   }
@@ -192,7 +192,7 @@ module.exports = class Room {
       [0, ...host.slice(0, 4), 0],
       [0, ...host.slice(4, 8), 0]
     ];
-    return execAsyncTouch(m =>
+    return execAsyncTouch(this.token, m =>
       m.hset(KEY_ROOM(this.token), `first`, ['host','guest'][Math.floor(Math.random() * 2)])
       .rpush(KEY_FIELD(this.token), utils.joinArray(fields))
     );
