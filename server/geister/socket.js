@@ -28,10 +28,8 @@ module.exports = io => io.on('connection', socket => {
 
   socket.on('ready', ()=> {
     room.ready(userType).then(()=> room.updateSummary()).then(()=> {
-      console.log(require('util').inspect(room, { depth: null }));
-      console.log(room.isStarted);
       if (room.isStarted) {
-        socket.to(token).emit('started', {started: true});
+        io.to(token).emit('started');
         // ここ自分以外にしかemitされない
       }
     });
