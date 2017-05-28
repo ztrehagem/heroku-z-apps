@@ -1,5 +1,7 @@
+require('./globals');
 const colors = require('utils/colors');
 const log = require('utils/log');
+const HTTP = require('http');
 const URL = require('url');
 const PATH = require('path');
 const fileServer = new (require('node-static').Server)('public');
@@ -7,23 +9,24 @@ const router = require('./router');
 const Request = require('./request');
 const Response = require('./response');
 
-module.exports = (req, resp)=> {
+module.exports = (()=> {
+  const server = HTTP.createServer((req, resp)=> handle(req, resp));
+  require('./socket')(server);
+  return server;
+})
+
+function handle(req, resp) {
   try {
-    handle(req, resp);
-  } catch (e) {
+    console.log(`${colors.yellow}${log.REQ} ${req.url}${colors.reset}`);
+    route(req, resp);
+  } catch(e) {
     console.error('Handling Error', e);
     resp.respondMessage(HttpStatus.INTERNAL_SERVER_ERROR);
   }
-};
-
-function handle(req, resp) {
-  console.log(`${colors.yellow}${log.REQ} ${req.url}${colors.reset}`);
-  route(req, resp);
 }
 
 function route(req, resp) {
   const pathname = URL.parse(req.url).pathname;
-  // const resolvedPathname = PATH.resolve();
 
   if( pathname.startsWith('/api/') )
     routeScripts(req, resp, pathname);

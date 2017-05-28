@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "sequelize": "./node_modules/.bin/sequelize",
-    "local": "heroku local"
+    "local": "heroku local",
+    "postinstall": "gulp && npm run sequelize -- db: migrate"
   },
   "repository": {
     "type": "git",
