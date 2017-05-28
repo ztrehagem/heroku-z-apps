@@ -33,7 +33,10 @@ module.exports = io => io.on('connection', socket => {
       .then(()=> room.ready(userType, formation))
       .then(()=> io.to(token).emit('ready', {userType}))
       .then(()=> room.updateSummary())
-      .then(()=> room.isPlayable ? room.play().then(()=> io.to(token).emit('started')) : null)
+      .then(()=> !room.isPlayable ? null : room.play()
+        .then(()=> room.updateSummary())
+        .then(()=> io.to(token).emit('started', room.serializeForPlayer(userType)))
+      )
       .catch(()=> console.log('failed on ready', userType));
   });
 

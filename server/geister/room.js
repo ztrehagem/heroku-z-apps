@@ -109,6 +109,13 @@ module.exports = class Room {
     };
   }
 
+  serializeForPlayer(userType) {
+    return Object.assign(this.serializeSummary(), {
+      turn: this.first,
+      field: this.field
+    });
+  }
+
   get status() {
     if (this.playing) return 'playing'; // ゲーム進行中
     if (!this.accepting) return 'ready'; // 準備中
