@@ -174,8 +174,8 @@ module.exports = class Room {
     if (!this.isPlayable) {
       return Promise.reject();
     }
-    const host = JSON.parse(this.host.formation);
-    const guest = JSON.parse(this.guest.formation);
+    const host = JSON.parse(this.host.formation).map(i => i ? 'h+' : 'h-');
+    const guest = JSON.parse(this.guest.formation).map(i => i ? 'g+' : 'g+');
     const fields = [
       // TODO h+とかにする
       [0, ...guest.slice(4, 8).reverse(), 0],
