@@ -33,26 +33,19 @@ module.exports = class Room {
     const fkey = KEY_FIELD(token);
     const mkey = KEY_MOVES(token);
     return execAsyncTouch(token, m => m.hgetall(rkey).lrange(fkey, 0, -1).lrange(mkey, 0, -1))
-      .then((replies) => new Room(token, replies[0], replies[1], replies[2]));
+      .then(([summary, field, moves]) => new Room(token, summary, field, moves));
   }
 
   static getSummary(token) {
     const key = KEY_SUMMARY(token);
     return execAsyncTouch(token, m => m.hgetall(key))
-      .then(replies => new Room(token, replies[0]));
+      .then(([summary]) => new Room(token, summary));
   }
 
   static getField(token) {
     const key = KEY_FIELD(token);
     return execAsyncTouch(token, m => m.lrange(key, 0, -1))
-      .then(replies => new Room(token, null, replies[0]));
-  }
-
-  static getDetails(token) {
-    const fkey = KEY_FIELD(token);
-    const mkey = KEY_MOVES(token);
-    return execAsyncTouch(token, m => m.lrange(fkey, 0, -1).lrange(mkey, 0, -1))
-      .then(replies => new Room(token, null, replies[0], replies[1]));
+      .then(([field]) => new Room(token, null, field));
   }
 
   static create(hostId, hostName) {
@@ -67,23 +60,16 @@ module.exports = class Room {
     const key = KEY_SUMMARY(token);
 
     return execAsyncTouch(token, m => m.hmset(key, values))
-      .then((replies)=> {
-        console.log('# created new geister-room');
-        return new Room(token, rawRoom);
-      })
-      .catch((err)=> {
-        console.warn('# couldnt create new geister-room');
-        console.warn(err);
-        return null;
-      });
+      .then(replies => new Room(token, rawRoom))
+      .catch(err => null);
   }
 
   static join(token, guestId, guestName) {
     const key = KEY_SUMMARY(token);
     return redis.hgetAsync(key, 'players:host:id')
-      .then(reply => (reply != guestId) ? Promise.resolve() : Promise.reject())
+      .then(hostId => (hostId != guestId) ? Promise.resolve() : Promise.reject())
       .then(()=> execAsyncTouch(token, m => m.hsetnx(key, 'players:guest:id', guestId).hsetnx(key, 'players:guest:name', guestName)))
-      .then(replies => (replies[0] == 1) ? Promise.resolve() : Promise.reject());
+      .then(([result]) => (result == 1) ? Promise.resolve() : Promise.reject());
   }
 
   constructor(token, rawRoom, rawField, rawMoves) {
