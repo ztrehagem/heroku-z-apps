@@ -1,5 +1,6 @@
 const Room = require('./room');
 
+// TODO move to room.js
 const UserType = {HOST: 'host', GUEST: 'guest'};
 
 module.exports = io => io.on('connection', socket => {

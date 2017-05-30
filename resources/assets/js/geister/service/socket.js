@@ -1,17 +1,19 @@
-app.service('socket', function($rootScope) {
+app.factory('Socket', function($rootScope) {
   'ngInject';
 
-  var socket = io('/geister');
-
-  this.on = (name, fn)=> {
-    socket.on(name, fn && ((...args)=> {
-      $rootScope.$apply(()=> fn(...args));
-    }));
-  };
-
-  this.emit = (name, arg, fn)=> {
-    socket.emit(name, arg, fn && ((...args)=> {
-      $rootScope.$apply(()=> fn(...args));
-    }));
+  return class Socket {
+    constructor() {
+      this.socket = io('/geister');
+    }
+    on(name, fn) {
+      this.socket.on(name, fn && ((...args)=> {
+        $rootScope.$apply(()=> fn(...args));
+      }));
+    }
+    emit(name, arg, fn) {
+      this.socket.emit(name, arg, fn && ((...args)=> {
+        $rootScope.$apply(()=> fn(...args));
+      }));
+    }
   };
 });

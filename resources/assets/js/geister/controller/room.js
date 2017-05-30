@@ -1,5 +1,7 @@
-app.controller('room', function($state, socket, apiMe) {
+app.controller('room', function($state, Socket, apiMe) {
   'ngInject';
+
+  const socket = new Socket();
 
   this.userType = null;
   this.players = {};
