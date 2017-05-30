@@ -22,13 +22,17 @@ module.exports = io => io.on('connection', socket => {
     });
   });
 
-  socket.on('ready', (formation)=> {
+  socket.on('ready', (formation, cb)=> {
     room.updateSummary()
       .then(()=> room.ready(userType, formation))
       .then(()=> io.to(token).emit('ready', {userType}))
+      .then(()=> cb(true))
       .then(()=> room.updateSummary())
       .then(()=> !room.isPlayable ? null : room.play().then(()=> io.to(token).emit('started')))
-      .catch(()=> console.log('failed on ready', userType));
+      .catch(()=> {
+        console.log('failed on ready', userType);
+        cb(false);
+      });
   });
 
   socket.on('get-field', (data, cb)=> {

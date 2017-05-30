@@ -3,10 +3,19 @@ app.component('roomFormation', {
   require: {
     roomCtrl: '^room'
   },
-  bindings: {
-    formation: '='
-  },
-  controller($scope) {
+  controller() {
     'ngInject';
+
+    this.isDecided = false;
+    this.formation = [true,true,true,true,false,false,false,false];
+    this.decide = ()=> {
+      this.sending = true;
+      this.roomCtrl.socket.emit('ready', this.formation, (data)=> {
+        if (!data) {
+          this.sending = false;
+          console.log('invalid formation');
+        }
+      });
+    };
   }
 });

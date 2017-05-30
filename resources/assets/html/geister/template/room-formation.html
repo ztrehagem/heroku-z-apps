@@ -1,9 +1,12 @@
 <table border="1">
   <tbody>
-    <tr ng-repeat="o in [0, 4]">
-      <td ng-repeat="f in [0 + o, 1 + o, 2 + o, 3 + o]">
-        <button type="button" ng-click="$ctrl.formation[f] = !$ctrl.formation[f]">{{$ctrl.formation[f] ? '+' : '-'}}</button>
+    <tr ng-repeat="i in [0, 4]">
+      <td ng-repeat="j in [0, 1, 2, 3]">
+        <button type="button" ng-click="$ctrl.formation[j + i] = !$ctrl.formation[j + i]">
+          {{$ctrl.formation[j + i] ? '+' : '-'}}
+        </button>
       </td>
     </tr>
   </tbody>
 </table>
+<button type="button" ng-click="$ctrl.decide()" ng-disabled="$ctrl.isDecided">ok</button>

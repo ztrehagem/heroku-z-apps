@@ -3,13 +3,12 @@ app.component('room', {
   controller($state, Socket, apiMe) {
     'ngInject';
 
-    const socket = new Socket();
+    this.socket = new Socket();
 
     this.userType = null;
     this.players = false;
-    this.formation = [true,true,true,true,false,false,false,false];
 
-    apiMe.get().then(resp => socket.emit('join', {
+    this.initialized = apiMe.get().then(resp => this.socket.emit('join', {
       token: $state.params.token,
       id: resp.id
     }, resp => {
@@ -21,26 +20,18 @@ app.component('room', {
       this.players = resp.room.players;
     }));
 
-    socket.on('joined:guest', (room)=> {
+    this.socket.on('joined:guest', (room)=> {
       console.log('joined:guest');
       this.players = room.players;
     });
 
-    socket.on('ready', ({userType})=> {
+    this.socket.on('ready', ({userType})=> {
       this.players[userType].ready = true;
     });
 
-    socket.on('started', (o)=> {
+    this.socket.on('started', (o)=> {
       console.log('started!', o);
-      socket.emit('get-field', null, (field)=> console.log('field', field));
+      this.socket.emit('get-field', null, (field)=> console.log('field', field));
     });
-
-    this.doReady = ()=> {
-      socket.emit('ready', [1, 0, 0, 1, 0, 1, 1, 0]); // 自コマの配置をset
-    };
-
-    this.canReady = ()=> {
-      return this.players[this.userType] && !this.players[this.userType].ready;
-    };
   }
 });
