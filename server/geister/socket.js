@@ -34,12 +34,16 @@ module.exports = io => io.on('connection', socket => {
       .then(()=> io.to(token).emit('ready', {userType}))
       .then(()=> room.updateSummary())
       .then(()=> !room.isPlayable ? null : room.play()
-        .then(()=> room.updateSummary())
-        .then(()=> room.updateField())
-        .then(()=> io.to(token).emit('started', room.serializeForPlayer(userType)))
+        .then(()=> io.to(token).emit('started'))
         .catch(()=> console.log('failed on play'))
       )
       .catch(()=> console.log('failed on ready', userType));
+  });
+
+  socket.on('get-field', (data, cb)=> {
+    if (!userType) return cb(false);
+    room.updateField()
+      .then(()=> cb(room.serializeField(userType)));
   });
 
 });

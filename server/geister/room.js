@@ -45,10 +45,6 @@ module.exports = class Room {
   static getField(token) {
     const key = KEY_FIELD(token);
     return execAsyncTouch(token, m => m.lrange(key, 0, -1))
-      .then(replies => {
-        console.log(replies);
-        return replies;
-      })
       .then(replies => new Room(token, null, replies[0]));
   }
 
@@ -127,8 +123,12 @@ module.exports = class Room {
   serializeForPlayer(userType) {
     return Object.assign(this.serializeSummary(), {
       turn: this.first,
-      field: this.field
+      field: this.serializeField(userType)
     });
+  }
+
+  serializeField(userType) {
+    return this.field.map(f => f.startsWith(userType[0]) ? f : f.substr(0, 1));
   }
 
   get status() {

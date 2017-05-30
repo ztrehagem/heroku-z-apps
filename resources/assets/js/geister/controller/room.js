@@ -27,6 +27,7 @@ app.controller('room', function($state, socket, apiMe) {
 
   socket.on('started', (o)=> {
     console.log('started!', o);
+    socket.emit('get-field', null, (field)=> console.log('field', field));
   });
 
   this.doReady = ()=> {
