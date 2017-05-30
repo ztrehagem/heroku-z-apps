@@ -3,36 +3,38 @@ app.component('room', {
   controller($state, $q, Socket, apiMe) {
     'ngInject';
 
-    this.socket = new Socket();
+    this.$onInit = ()=> {
+      this.socket = new Socket();
 
-    this.userType = null;
-    this.players = false;
+      this.userType = null;
+      this.players = false;
 
-    this.initialized = apiMe.get().then(resp => this.socket.emitAsync('join', {
-      token: $state.params.token,
-      id: resp.id
-    })).then(([resp, cbAsync]) => {
-      return resp || $q.reject();
-    }).then(resp => {
-      console.log('succeeded joining socket room', resp);
-      this.userType = resp.userType;
-      this.players = resp.room.players;
-      this.status = resp.room.status;
-    }).catch(()=> $state.go('root'));
+      this.initialized = apiMe.get().then(me => this.socket.emitAsync('join', {
+        token: $state.params.token,
+        id: me.id
+      })).then(([resp, cbAsync]) => {
+        return resp || $q.reject();
+      }).then(resp => {
+        console.log('succeeded joining socket room', resp);
+        this.userType = resp.userType;
+        this.players = resp.room.players;
+        this.status = resp.room.status;
+      }).catch(()=> $state.go('root'));
 
-    this.socket.on('joined:guest', (room)=> {
-      console.log('joined:guest');
-      this.players = room.players;
-    });
+      this.socket.on('joined:guest', (room)=> {
+        console.log('joined:guest');
+        this.players = room.players;
+      });
 
-    this.socket.on('ready', ({userType})=> {
-      console.log('ready!', userType);
-      this.players[userType].ready = true;
-    });
+      this.socket.on('ready', ({userType})=> {
+        console.log('ready!', userType);
+        this.players[userType].ready = true;
+      });
 
-    this.socket.on('started', ()=> {
-      console.log('started!');
-      this.status = 'playing';
-    });
+      this.socket.on('started', ()=> {
+        console.log('started!');
+        this.status = 'playing';
+      });
+    };
   }
 });

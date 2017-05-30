@@ -28,17 +28,15 @@ module.exports = io => io.on('connection', socket => {
       .then(()=> io.to(token).emit('ready', {userType}))
       .then(()=> cb(true))
       .then(()=> room.updateSummary())
-      .then(()=> !room.isPlayable ? null : room.play().then(()=> io.to(token).emit('started')))
-      .catch(()=> {
-        console.log('failed on ready', userType);
-        cb(false);
-      });
+      .then(()=> room.isPlayable ? room.play().then(()=> io.to(token).emit('started')) : null)
+      .catch(()=> cb(false));
   });
 
   socket.on('get-field', (data, cb)=> {
     if (!userType) return cb(false);
     room.updateField()
-      .then(()=> cb(room.serializeField(userType)));
+      .then(()=> cb(room.serializeField(userType)))
+      .catch(()=> cb(false));
   });
 
 });

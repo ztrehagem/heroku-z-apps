@@ -6,9 +6,9 @@ app.component('roomPlayfield', {
   controller() {
     'ngInject';
 
-    this.field = null;
-
     this.$onInit = ()=> {
+      this.field = null;
+
       this.roomCtrl.socket.emit('get-field', null, field => {
         this.field = this.roomCtrl.userType == 'host' ? field : field.reverse();
       });

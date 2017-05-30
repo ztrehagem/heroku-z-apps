@@ -6,8 +6,11 @@ app.component('roomFormation', {
   controller() {
     'ngInject';
 
-    this.isDecided = false;
-    this.formation = [true,true,true,true,false,false,false,false];
+    this.$onInit = ()=> {
+      this.isDecided = false;
+      this.formation = [true,true,true,true,false,false,false,false];
+    };
+
     this.decide = ()=> {
       this.sending = true;
       this.roomCtrl.socket.emit('ready', this.formation, (data)=> {
