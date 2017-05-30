@@ -117,7 +117,11 @@ module.exports = class Room {
   }
 
   serializeField(userType) {
-    return this.field.map(f => f.startsWith(userType[0]) ? f : f.substr(0, 1));
+    return this.field.map(f => {
+      if (f == '0') return null; // no object
+      else if (!f.startsWith(userType[0])) return 'e'; // enemy object
+      return f[1]; // my object
+    });
   }
 
   get status() {
@@ -185,7 +189,7 @@ module.exports = class Room {
       return Promise.reject();
     }
     const host = JSON.parse(this.host.formation).map(i => i ? 'h+' : 'h-');
-    const guest = JSON.parse(this.guest.formation).map(i => i ? 'g+' : 'g+');
+    const guest = JSON.parse(this.guest.formation).map(i => i ? 'g+' : 'g-');
     const fields = [
       [0, ...guest.slice(4, 8).reverse(), 0],
       [0, ...guest.slice(0, 4).reverse(), 0],
