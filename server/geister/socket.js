@@ -1,8 +1,5 @@
 const Room = require('./room');
 
-// TODO move to room.js
-const UserType = {HOST: 'host', GUEST: 'guest'};
-
 module.exports = io => io.on('connection', socket => {
 
   let token = null;
@@ -11,7 +8,6 @@ module.exports = io => io.on('connection', socket => {
   let room = null;
 
   socket.on('join', (data, cb)=> {
-    // redisの参加者情報を確認する
     userId = data.id;
     Room.getSummary(data.token).then(_room => {
       if (!_room.isPlayer(userId)) return cb(false);
@@ -19,9 +15,9 @@ module.exports = io => io.on('connection', socket => {
       room = _room;
       socket.join(token, ()=> {
         if (room.isHost(userId)) {
-          userType = UserType.HOST;
+          userType = Room.UserType.HOST;
         } else if (room.isGuest(userId)) {
-          userType = UserType.GUEST;
+          userType = Room.UserType.GUEST;
           socket.to(token).emit('joined:guest', room.serializeSummary());
         }
         cb({userType, room: room.serializeSummary()});

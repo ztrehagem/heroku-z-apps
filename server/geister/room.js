@@ -10,6 +10,8 @@ const KEY_SUMMARY = token => `${KEY_PREFIX}:summary:${token}`;
 const KEY_FIELD = token => `${KEY_PREFIX}:field:${token}`;
 const KEY_MOVES = token => `${KEY_PREFIX}:moves:${token}`;
 
+const UserType = {HOST: 'host', GUEST: 'guest'};
+
 const execAsyncTouch = (token, fn)=>
   fn(redis.multi())
   .expire(KEY_SUMMARY(token), EXPIRE)
@@ -18,6 +20,8 @@ const execAsyncTouch = (token, fn)=>
   .execAsync();
 
 module.exports = class Room {
+  static get UserType() { return UserType; }
+
   static index() {
     return redis.keysAsync(KEY_SUMMARY('*'))
       .then(keys => Promise.all(keys.map(key => redis.hgetallAsync(key).then(reply => ({
@@ -128,7 +132,6 @@ module.exports = class Room {
   }
 
   get playing() {
-    // return this.isHostReady && this.isGuestReady;
     return !!this.first;
   }
 
@@ -169,7 +172,7 @@ module.exports = class Room {
   }
 
   ready(userType, formation) {
-    if (!['guest', 'host'].includes(userType)) {
+    if (!Object.values(UserType).includes(userType)) {
       return Promise.reject();
     }
     return execAsyncTouch(this.token, m =>
@@ -184,7 +187,6 @@ module.exports = class Room {
     const host = JSON.parse(this.host.formation).map(i => i ? 'h+' : 'h-');
     const guest = JSON.parse(this.guest.formation).map(i => i ? 'g+' : 'g+');
     const fields = [
-      // TODO h+とかにする
       [0, ...guest.slice(4, 8).reverse(), 0],
       [0, ...guest.slice(0, 4).reverse(), 0],
       [0, 0, 0, 0, 0, 0],
@@ -193,7 +195,7 @@ module.exports = class Room {
       [0, ...host.slice(4, 8), 0]
     ];
     return execAsyncTouch(this.token, m =>
-      m.hset(KEY_SUMMARY(this.token), `first`, ['host','guest'][Math.floor(Math.random() * 2)])
+      m.hset(KEY_SUMMARY(this.token), 'first', Object.values(UserType)[Math.floor(Math.random() * 2)])
       .rpush(KEY_FIELD(this.token), utils.joinArray(fields))
     );
   }
