@@ -1,4 +1,4 @@
-<div ng-if="$ctrl.initialized.$$state.status">
+<div ng-if="$ctrl.initialized.$$state.status == 1">
   <div>
     <span>you are {{$ctrl.userType}}</span>
   </div>
@@ -10,4 +10,8 @@
   <hr>
 
   <room-formation ng-if="!$ctrl.players[$ctrl.userType].ready"></room-formation>
+
+  <hr>
+
+  <room-playfield ng-if="$ctrl.status == 'playing'"></room-playfield>
 </div>

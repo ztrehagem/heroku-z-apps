@@ -1,0 +1,11 @@
+<div ng-if="$ctrl.field">
+  <table border="1">
+    <tbody>
+      <tr ng-repeat="row in [0, 1, 2, 3, 4, 5]">
+        <td ng-repeat="column in [0, 1, 2, 3, 4, 5]" ng-init="index = row * 6 + column">
+          {{$ctrl.field[index] || '_'}}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

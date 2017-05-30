@@ -17,6 +17,7 @@ app.component('room', {
       console.log('succeeded joining socket room', resp);
       this.userType = resp.userType;
       this.players = resp.room.players;
+      this.status = resp.room.status;
     }).catch(()=> $state.go('root'));
 
     this.socket.on('joined:guest', (room)=> {
@@ -29,9 +30,9 @@ app.component('room', {
       this.players[userType].ready = true;
     });
 
-    this.socket.on('started', (o)=> {
-      console.log('started!', o);
-      this.socket.emit('get-field', null, (field)=> console.log('field', field));
+    this.socket.on('started', ()=> {
+      console.log('started!');
+      this.status = 'playing';
     });
   }
 });
