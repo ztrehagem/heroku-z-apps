@@ -1,6 +1,6 @@
 app.component('room', {
   templateUrl: asset.template('room'),
-  controller($state, Socket, apiMe) {
+  controller($state, $q, Socket, apiMe) {
     'ngInject';
 
     this.socket = new Socket();
@@ -8,17 +8,16 @@ app.component('room', {
     this.userType = null;
     this.players = false;
 
-    this.initialized = apiMe.get().then(resp => this.socket.emit('join', {
+    this.initialized = apiMe.get().then(resp => this.socket.emitAsync('join', {
       token: $state.params.token,
       id: resp.id
-    }, resp => {
-      if (!resp) {
-        return $state.go('root');
-      }
+    })).then(([resp, cbAsync]) => {
+      return resp || $q.reject();
+    }).then(resp => {
       console.log('succeeded joining socket room', resp);
       this.userType = resp.userType;
       this.players = resp.room.players;
-    }));
+    }).catch(()=> $state.go('root'));
 
     this.socket.on('joined:guest', (room)=> {
       console.log('joined:guest');
@@ -26,6 +25,7 @@ app.component('room', {
     });
 
     this.socket.on('ready', ({userType})=> {
+      console.log('ready!', userType);
       this.players[userType].ready = true;
     });
 
