@@ -6,7 +6,7 @@
     players.guest.id
     players.guest.name
     players.guest.formation Array
-    first: 'host' / 'guest'
+    turn: 'host' / 'guest'
     finish: 0/1
 
 [LIST]

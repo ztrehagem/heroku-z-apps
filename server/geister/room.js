@@ -3,92 +3,101 @@ const utils = require('utils');
 const redisUtils = require('utils/redis');
 const UUID = require('uuid/v4');
 
-const KEY_PREFIX = 'geister';
-const CREATED_AT = 'createdAt';
 const EXPIRE = '' + (60 * 20); // 20 minutes
+const KEY_PREFIX = 'geister';
 const KEY_SUMMARY = token => `${KEY_PREFIX}:summary:${token}`;
 const KEY_FIELD = token => `${KEY_PREFIX}:field:${token}`;
 const KEY_MOVES = token => `${KEY_PREFIX}:moves:${token}`;
 
 const UserType = {HOST: 'host', GUEST: 'guest'};
 
-const execAsyncTouch = (token, fn)=>
+const execAsyncTtl = (token, fn)=>
   fn(redis.multi())
   .expire(KEY_SUMMARY(token), EXPIRE)
   .expire(KEY_MOVES(token), EXPIRE)
   .expire(KEY_FIELD(token), EXPIRE)
   .execAsync();
 
-module.exports = class Room {
-  static get UserType() { return UserType; }
+const initSummary = (id, name)=> redisUtils.buildHash({
+  createdAt: new Date().toUTCString(),
+  players: {host: {id, name}}
+});
 
-  static index() {
-    return redis.keysAsync(KEY_SUMMARY('*'))
-      .then(keys => Promise.all(keys.map(key => redis.hgetallAsync(key).then(reply => ({
-        token: new RegExp(`^${KEY_SUMMARY('(.*)')}$`).exec(key)[1],
-        raw: reply
-      })))))
-      .then(results => results.map(r => new Room(r.token, r.raw)))
-      .catch(err => null);
+module.exports = class Room {
+  static get UserType() {
+    return UserType;
   }
 
-  static getFull(token) {
-    const rkey = KEY_SUMMARY(token);
-    const fkey = KEY_FIELD(token);
-    const mkey = KEY_MOVES(token);
-    return execAsyncTouch(token, m => m.hgetall(rkey).lrange(fkey, 0, -1).lrange(mkey, 0, -1))
+  static index() {
+    const keyPattern = KEY_SUMMARY('*');
+    const regexp = new RegExp(`^${KEY_SUMMARY('(.*)')}$`);
+    const keyToToken = key => key.match(regexp)[1];
+
+    return redis.keysAsync(keyPattern)
+      .then(keys => Promise.all(keys.map(key =>
+        redis.hgetallAsync(key)
+          .then(summary => new Room(keyToToken(key), summary))
+      )))
+      .catch(()=> null);
+  }
+
+  static getAll(token) {
+    const sKey = KEY_SUMMARY(token);
+    const fKey = KEY_FIELD(token);
+    const mKey = KEY_MOVES(token);
+
+    return execAsyncTtl(token, m => m.hgetall(sKey).lrange(fKey, 0, -1).lrange(mKey, 0, -1))
       .then(([summary, field, moves]) => new Room(token, summary, field, moves));
   }
 
   static getSummary(token) {
     const key = KEY_SUMMARY(token);
-    return execAsyncTouch(token, m => m.hgetall(key))
+
+    return execAsyncTtl(token, m => m.hgetall(key))
       .then(([summary]) => new Room(token, summary));
   }
 
   static getField(token) {
     const key = KEY_FIELD(token);
-    return execAsyncTouch(token, m => m.lrange(key, 0, -1))
+
+    return execAsyncTtl(token, m => m.lrange(key, 0, -1))
       .then(([field]) => new Room(token, null, field));
   }
 
   static create(hostId, hostName) {
     const token = UUID();
-    const rawRoom = redisUtils.buildHash({
-      [CREATED_AT]: new Date().toUTCString(),
-      players: {
-        host: {id: hostId, name: hostName}
-      }
-    });
-    const values = utils.joinArray(utils.objectToArray(rawRoom));
+    const rawSummary = initSummary(hostId, hostName);
+    const values = utils.joinArray(utils.objectToArray(rawSummary));
     const key = KEY_SUMMARY(token);
 
-    return execAsyncTouch(token, m => m.hmset(key, values))
-      .then(replies => new Room(token, rawRoom))
-      .catch(err => null);
+    return execAsyncTtl(token, m => m.hmset(key, values))
+      .then(()=> new Room(token, rawSummary));
   }
 
   static join(token, guestId, guestName) {
     const key = KEY_SUMMARY(token);
+
     return redis.hgetAsync(key, 'players:host:id')
       .then(hostId => (hostId != guestId) ? Promise.resolve() : Promise.reject())
-      .then(()=> execAsyncTouch(token, m => m.hsetnx(key, 'players:guest:id', guestId).hsetnx(key, 'players:guest:name', guestName)))
+      .then(()=> execAsyncTtl(token, m => m.hsetnx(key, 'players:guest:id', guestId).hsetnx(key, 'players:guest:name', guestName)))
       .then(([result]) => (result == 1) ? Promise.resolve() : Promise.reject());
   }
 
-  constructor(token, rawRoom, rawField, rawMoves) {
+  constructor(token, rawSummary, rawField, rawMoves) {
     this.token = token;
-    this.summary = rawRoom && redisUtils.parseHash(rawRoom);
+    this.summary = rawSummary && redisUtils.parseHash(rawSummary);
     this.field = rawField;
     this.moves = rawMoves;
   }
 
   updateSummary() {
-    return Room.getSummary(this.token).then(room => Object.assign(this, {summary: room.summary}));
+    return Room.getSummary(this.token)
+      .then(room => this.summary = room.summary);
   }
 
   updateField() {
-    return Room.getField(this.token).then(room => Object.assign(this, {field: room.field}));
+    return Room.getField(this.token)
+      .then(room => this.field = room.field);
   }
 
   serializeSummary() {
@@ -111,16 +120,20 @@ module.exports = class Room {
 
   serializeForPlayer(userType) {
     return Object.assign(this.serializeSummary(), {
-      turn: this.first,
+      turn: this.turn,
       field: this.serializeField(userType)
     });
   }
 
   serializeField(userType) {
-    return this.field.map(f => {
-      if (f == '0') return null; // no object
-      else if (!f.startsWith(userType[0])) return 'e'; // enemy object
-      return f[1]; // my object
+    return this.field.map(typeStr => {
+      if (typeStr == '0') {
+        return null; // no object
+      } else if (typeStr[0] == userType[0]) {
+        return typeStr[1]; // my object
+      } else {
+        return 'e'; // enemy object
+      }
     });
   }
 
@@ -136,11 +149,11 @@ module.exports = class Room {
   }
 
   get playing() {
-    return !!this.first;
+    return !!this.turn;
   }
 
-  get first() {
-    return this.summary.first;
+  get turn() {
+    return this.summary.turn;
   }
 
   get host() {
@@ -183,10 +196,11 @@ module.exports = class Room {
     if (!isValid) {
       return Promise.reject();
     }
-    const formationStr = `[${formation.map(f => f ? 1 : 0).join(',')}]`;
-    return execAsyncTouch(this.token, m =>
-      m.hset(KEY_SUMMARY(this.token), `players:${userType}:formation`, formationStr)
-    );
+    const mappedFormation = formation.map(f => f ? 1 : 0);
+    const formationStr = `[${mappedFormation.join(',')}]`;
+    const key = KEY_SUMMARY(this.token);
+    const hashKey = `players:${userType}:formation`;
+    return execAsyncTtl(this.token, m => m.hset(key, hashKey, formationStr));
   }
 
   play() {
@@ -195,17 +209,17 @@ module.exports = class Room {
     }
     const host = JSON.parse(this.host.formation).map(i => i ? 'h+' : 'h-');
     const guest = JSON.parse(this.guest.formation).map(i => i ? 'g+' : 'g-');
-    const fields = [
-      [0, ...guest.slice(4, 8).reverse(), 0],
-      [0, ...guest.slice(0, 4).reverse(), 0],
-      [0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0],
-      [0, ...host.slice(0, 4), 0],
-      [0, ...host.slice(4, 8), 0]
+    const field = [
+      0, ...guest.slice(4, 8).reverse(), 0,
+      0, ...guest.slice(0, 4).reverse(), 0,
+      0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0,
+      0, ...host.slice(0, 4), 0,
+      0, ...host.slice(4, 8), 0
     ];
-    return execAsyncTouch(this.token, m =>
-      m.hset(KEY_SUMMARY(this.token), 'first', Object.values(UserType)[Math.floor(Math.random() * 2)])
-      .rpush(KEY_FIELD(this.token), utils.joinArray(fields))
-    );
+    const sKey = KEY_SUMMARY(this.token);
+    const fKey = KEY_FIELD(this.token);
+    const firstUser = Object.values(UserType)[Math.floor(Math.random() * 2)];
+    return execAsyncTtl(this.token, m => m.hset(sKey, 'turn', firstUser).rpush(fKey, field));
   }
 };
