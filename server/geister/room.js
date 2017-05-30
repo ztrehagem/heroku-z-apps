@@ -6,22 +6,22 @@ const UUID = require('uuid/v4');
 const KEY_PREFIX = 'geister';
 const CREATED_AT = 'createdAt';
 const EXPIRE = '' + (60 * 20); // 20 minutes
-const KEY_ROOM = token => `${KEY_PREFIX}:room:${token}`;
+const KEY_SUMMARY = token => `${KEY_PREFIX}:summary:${token}`;
 const KEY_FIELD = token => `${KEY_PREFIX}:field:${token}`;
 const KEY_MOVES = token => `${KEY_PREFIX}:moves:${token}`;
 
 const execAsyncTouch = (token, fn)=>
   fn(redis.multi())
-  .expire(KEY_ROOM(token), EXPIRE)
+  .expire(KEY_SUMMARY(token), EXPIRE)
   .expire(KEY_MOVES(token), EXPIRE)
   .expire(KEY_FIELD(token), EXPIRE)
   .execAsync();
 
 module.exports = class Room {
   static index() {
-    return redis.keysAsync(KEY_ROOM('*'))
+    return redis.keysAsync(KEY_SUMMARY('*'))
       .then(keys => Promise.all(keys.map(key => redis.hgetallAsync(key).then(reply => ({
-        token: new RegExp(`^${KEY_ROOM('(.*)')}$`).exec(key)[1],
+        token: new RegExp(`^${KEY_SUMMARY('(.*)')}$`).exec(key)[1],
         raw: reply
       })))))
       .then(results => results.map(r => new Room(r.token, r.raw)))
@@ -29,15 +29,15 @@ module.exports = class Room {
   }
 
   static getFull(token) {
-    const rkey = KEY_ROOM(token);
+    const rkey = KEY_SUMMARY(token);
     const fkey = KEY_FIELD(token);
     const mkey = KEY_MOVES(token);
     return execAsyncTouch(token, m => m.hgetall(rkey).lrange(fkey, 0, -1).lrange(mkey, 0, -1))
-      .then(replies => new Room(token, replies[0], replies[1], replies[2]));
+      .then((replies) => new Room(token, replies[0], replies[1], replies[2]));
   }
 
   static getSummary(token) {
-    const key = KEY_ROOM(token);
+    const key = KEY_SUMMARY(token);
     return execAsyncTouch(token, m => m.hgetall(key))
       .then(replies => new Room(token, replies[0]));
   }
@@ -64,7 +64,7 @@ module.exports = class Room {
       }
     });
     const values = utils.joinArray(utils.objectToArray(rawRoom));
-    const key = KEY_ROOM(token);
+    const key = KEY_SUMMARY(token);
 
     return execAsyncTouch(token, m => m.hmset(key, values))
       .then((replies)=> {
@@ -79,7 +79,7 @@ module.exports = class Room {
   }
 
   static join(token, guestId, guestName) {
-    const key = KEY_ROOM(token);
+    const key = KEY_SUMMARY(token);
     return redis.hgetAsync(key, 'players:host:id')
       .then(reply => (reply != guestId) ? Promise.resolve() : Promise.reject())
       .then(()=> execAsyncTouch(token, m => m.hsetnx(key, 'players:guest:id', guestId).hsetnx(key, 'players:guest:name', guestName)))
@@ -88,14 +88,13 @@ module.exports = class Room {
 
   constructor(token, rawRoom, rawField, rawMoves) {
     this.token = token;
-    // TODO room->summary
-    this.room = rawRoom && redisUtils.parseHash(rawRoom);
+    this.summary = rawRoom && redisUtils.parseHash(rawRoom);
     this.field = rawField;
     this.moves = rawMoves;
   }
 
   updateSummary() {
-    return Room.getSummary(this.token).then(room => Object.assign(this, {room: room.room}));
+    return Room.getSummary(this.token).then(room => Object.assign(this, {summary: room.summary}));
   }
 
   updateField() {
@@ -106,7 +105,7 @@ module.exports = class Room {
     return {
       token: this.token,
       status: this.status,
-      createdAt: this.room.createdAt,
+      createdAt: this.summary.createdAt,
       players: {
         host: (h => h && {
           name: h.name,
@@ -138,8 +137,8 @@ module.exports = class Room {
   }
 
   get accepting() {
-    return this.room && this.room.players &&
-      (!!this.room.players.host && !this.room.players.guest);
+    return this.summary && this.summary.players &&
+      (!!this.summary.players.host && !this.summary.players.guest);
   }
 
   get playing() {
@@ -148,15 +147,15 @@ module.exports = class Room {
   }
 
   get first() {
-    return this.room.first;
+    return this.summary.first;
   }
 
   get host() {
-    return this.room && this.room.players.host;
+    return this.summary && this.summary.players.host;
   }
 
   get guest() {
-    return this.room && this.room.players.guest;
+    return this.summary && this.summary.players.guest;
   }
 
   isHost(id) {
@@ -188,7 +187,7 @@ module.exports = class Room {
       return Promise.reject();
     }
     return execAsyncTouch(this.token, m =>
-      m.hset(KEY_ROOM(this.token), `players:${userType}:formation`, `[${formation.join(',')}]`)
+      m.hset(KEY_SUMMARY(this.token), `players:${userType}:formation`, `[${formation.join(',')}]`)
     );
   }
 
@@ -208,7 +207,7 @@ module.exports = class Room {
       [0, ...host.slice(4, 8), 0]
     ];
     return execAsyncTouch(this.token, m =>
-      m.hset(KEY_ROOM(this.token), `first`, ['host','guest'][Math.floor(Math.random() * 2)])
+      m.hset(KEY_SUMMARY(this.token), `first`, ['host','guest'][Math.floor(Math.random() * 2)])
       .rpush(KEY_FIELD(this.token), utils.joinArray(fields))
     );
   }
