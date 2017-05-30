@@ -1,8 +1,14 @@
 <div>
-  <span>you are {{ctrl.userType}}</span>
-  <button type="button" ng-click="ctrl.doReady()" ng-if="ctrl.canReady()">ready</button>
+  <span>you are {{$ctrl.userType}}</span>
+  <button type="button" ng-click="$ctrl.doReady()" ng-if="$ctrl.canReady()">ready</button>
 </div>
 
 <div>
-  {{ctrl.players | json}}
+  {{$ctrl.players | json}}
+</div>
+
+<hr>
+
+<div ng-if="!$ctrl.players[$ctrl.userType].ready">
+  <room-formation formation="$ctrl.formation"></room-formation>
 </div>

@@ -179,8 +179,9 @@ module.exports = class Room {
     if (!Object.values(UserType).includes(userType)) {
       return Promise.reject();
     }
+    const formationStr = `[${formation.map(f => f ? 1 : 0).join(',')}]`;
     return execAsyncTouch(this.token, m =>
-      m.hset(KEY_SUMMARY(this.token), `players:${userType}:formation`, `[${formation.join(',')}]`)
+      m.hset(KEY_SUMMARY(this.token), `players:${userType}:formation`, formationStr)
     );
   }
 

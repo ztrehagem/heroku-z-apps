@@ -15,7 +15,6 @@ app.config(function($stateProvider) {
   })
   .state('room', {
     url: '/rooms/:token',
-    controller: 'room as ctrl',
-    templateUrl: asset.template('room')
+    component: 'room'
   });
 });
