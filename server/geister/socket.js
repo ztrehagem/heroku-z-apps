@@ -2,10 +2,7 @@ const Room = require('./room');
 
 module.exports = io => io.on('connection', socket => {
 
-  let token = null;
-  let userId = null;
-  let userType = null;
-  let room = null;
+  let token, userId, userType, room;
 
   socket.on('join', (data, cb)=> {
     userId = data.id;
