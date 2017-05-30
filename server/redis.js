@@ -1,1 +1,1 @@
-module.exports = require('redis').createClient();
+module.exports = require('redis').createClient(process.env.REDIS_URL);
