@@ -36,7 +36,7 @@ Task('html', ['html'], (res)=>
   $.gulp.src(res.src)
     .pipe($.errorHandler())
     .pipe($.changed(res.dest))
-    .pipe($.replace(/{\$(.+?)}/g, (match, name)=>
+    .pipe($.replace(/{%(.+?)}/g, (match, name)=>
       res.replace[name][process.env.NODE_ENV ? 'cdn' : 'local']
     ))
     .pipe($.html({collapseWhitespace: true, minifyCSS: true, minifyJS: true}))
