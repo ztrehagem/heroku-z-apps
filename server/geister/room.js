@@ -18,9 +18,14 @@ const execAsyncTtl = (token, fn)=>
   .expire(KEY_FIELD(token), EXPIRE)
   .execAsync();
 
-const initSummary = (id, name)=> redisUtils.buildHash({
+const createInitialSummary = (hostId, hostName)=> ({
   createdAt: new Date().toUTCString(),
-  players: {host: {id, name}}
+  players: {
+    host: {
+      id: hostId,
+      name: hostName
+    }
+  }
 });
 
 module.exports = class Room {
@@ -34,44 +39,20 @@ module.exports = class Room {
     const keyToToken = key => key.match(regexp)[1];
 
     return redis.keysAsync(keyPattern)
-      .then(keys => Promise.all(keys.map(key =>
-        redis.hgetallAsync(key)
-          .then(summary => new Room(keyToToken(key), summary))
-      )))
+      .then(keys => keys.map(key => new Room(keyToToken(key))))
+      .then(rooms => rooms.map(room => room.fetchSummary()))
+      .then(promises => Promise.all(promises))
       .catch(()=> null);
-  }
-
-  static getAll(token) {
-    const sKey = KEY_SUMMARY(token);
-    const fKey = KEY_FIELD(token);
-    const mKey = KEY_MOVES(token);
-
-    return execAsyncTtl(token, m => m.hgetall(sKey).lrange(fKey, 0, -1).lrange(mKey, 0, -1))
-      .then(([summary, field, moves]) => new Room(token, summary, field, moves));
-  }
-
-  static getSummary(token) {
-    const key = KEY_SUMMARY(token);
-
-    return execAsyncTtl(token, m => m.hgetall(key))
-      .then(([summary]) => new Room(token, summary));
-  }
-
-  static getField(token) {
-    const key = KEY_FIELD(token);
-
-    return execAsyncTtl(token, m => m.lrange(key, 0, -1))
-      .then(([field]) => new Room(token, null, field));
   }
 
   static create(hostId, hostName) {
     const token = UUID();
-    const rawSummary = initSummary(hostId, hostName);
-    const values = utils.joinArray(utils.objectToArray(rawSummary));
+    const summary = createInitialSummary(hostId, hostName);
+    const values = utils.joinArray(utils.objectToArray(redisUtils.buildHash(summary)));
     const key = KEY_SUMMARY(token);
 
     return execAsyncTtl(token, m => m.hmset(key, values))
-      .then(()=> new Room(token, rawSummary));
+      .then(()=> new Room(token, summary));
   }
 
   static join(token, guestId, guestName) {
@@ -83,21 +64,35 @@ module.exports = class Room {
       .then(([result]) => (result == 1) ? Promise.resolve() : Promise.reject());
   }
 
-  constructor(token, rawSummary, rawField, rawMoves) {
-    this.token = token;
-    this.summary = rawSummary && redisUtils.parseHash(rawSummary);
-    this.field = rawField;
-    this.moves = rawMoves;
+  constructor(token, rawSummary) {
+    this._token = token;
+    if (rawSummary) this.summary = rawSummary;
   }
 
-  updateSummary() {
-    return Room.getSummary(this.token)
-      .then(room => this.summary = room.summary);
+  get token() {
+    return this._token;
   }
 
-  updateField() {
-    return Room.getField(this.token)
-      .then(room => this.field = room.field);
+  get summary() {
+    return this._summary;
+  }
+
+  set summary(rawSummary) {
+    this._summary = redisUtils.parseHash(rawSummary);
+  }
+
+  fetchSummary() {
+    const key = KEY_SUMMARY(this.token);
+    return redis.hgetallAsync(key)
+      .then(summary => this.summary = summary)
+      .then(()=> this);
+  }
+
+  fetchField() {
+    const key = KEY_FIELD(this.token);
+    return redis.lrangeAsync(key, 0, -1)
+      .then(field => this.field = field)
+      .then(()=> this);
   }
 
   serializeSummary() {
