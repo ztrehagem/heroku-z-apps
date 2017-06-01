@@ -11,6 +11,13 @@ const KEY_MOVES = token => `${KEY_PREFIX}:moves:${token}`;
 
 const UserType = {HOST: 'host', GUEST: 'guest'};
 
+const inverseUserType = userType => {
+  switch (userType) {
+    case UserType.HOST: return UserType.GUEST;
+    case UserType.GUEST: return UserType.HOST;
+  }
+};
+
 const createInitialSummary = (hostId, hostName)=> ({
   createdAt: new Date().toUTCString(),
   players: {
@@ -20,6 +27,10 @@ const createInitialSummary = (hostId, hostName)=> ({
     }
   }
 });
+
+const fieldVectorToIndex = ({x, y})=> y * 6 + x;
+
+const reverseVector = ({x, y})=> ({x: 6 - x, y: 6 - y});
 
 module.exports = class Room {
   static get UserType() {
@@ -126,13 +137,6 @@ module.exports = class Room {
     };
   }
 
-  serializeForPlayer(userType) {
-    return Object.assign(this.serializeSummary(), {
-      turn: this.turn,
-      field: this.serializeField(userType)
-    });
-  }
-
   serializeField(userType) {
     return (userType == UserType.GUEST ? this.field.reverse() : this.field).map(typeStr => {
       if (typeStr == '0') {
@@ -142,6 +146,14 @@ module.exports = class Room {
       } else {
         return 'e'; // enemy object
       }
+    });
+  }
+
+  serializePlayingInfo(userType) {
+    // return Object.assign(this.serializeSummary(), {
+    return ({
+      turn: this.turn,
+      field: this.serializeField(userType)
     });
   }
 
@@ -160,8 +172,16 @@ module.exports = class Room {
     return !!this.turn;
   }
 
+  // get won() {
+  //   return this.summary.won;
+  // }
+
   get turn() {
     return this.summary.turn;
+  }
+
+  isTuen(userType) {
+    return this.turn == userType;
   }
 
   get host() {
@@ -230,4 +250,33 @@ module.exports = class Room {
       .rpush(this.fieldKey, field)
     );
   }
+
+  move(userType, from, to) {
+    if (!Object.values(UserType).includes(userType)) return Promise.reject();
+    if (userType == UserType.GUSET) {
+      from = reverseVector(from);
+      to = reverseVector(to);
+    }
+    const fromIndex = fieldVectorToIndex(from);
+    const fromType = this.field[fromIndex];
+    const fromIsMine = fromType[0] == userType[0];
+    if (!fromIsMine) return Promise.reject();
+    const toIndex = fieldVectorToIndex(to);
+    const toType = this.field[toIndex];
+    const toIsMine = toType[0] == userType[0];
+    if (toIsMine) return Promise.reject();
+    const isNextTo = Math.abs(from.x - to.x) + Math.abs(from.y - to.y) == 1;
+    if (!isNextTo) return Promise.reject();
+    return this.update(m =>
+      m.lset(this.fieldKey, fromIndex, 0)
+      .lset(this.fieldKey, toIndex, fromType)
+      .hset(this.summaryKey, 'turn', inverseUserType(userType))
+    )
+    .then(()=> this.fetchField())
+    .then(()=> this.isFinished);
+  }
+
+  // escape(userType, target) {
+  //   if (!Object.values(UserType).includes(userType)) return Promise.reject();
+  // }
 };

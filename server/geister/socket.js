@@ -37,14 +37,27 @@ module.exports = io => io.on('connection', socket => {
       });
   });
 
-  socket.on('get-field', (data, cb)=> {
+  socket.on('get-playing-info', (data, cb)=> {
     if (!userType) return cb(false);
-    room.fetchField()
-      .then(()=> cb(room.serializeField(userType)))
+    room.fetchSummary()
+      .then(()=> room.fetchField())
+      .then(()=> cb(room.serializePlayingInfo(userType)))
       .catch(()=> {
         console.log('error on get-field');
         cb(false);
       });
   });
 
+  socket.on('move', ({from, to}, cb)=> {
+    return room.updateSummary()
+      .then(()=> room.isTurn(userType) ? null : Promise.reject())
+      .then(()=> room.updateField())
+      .then(()=> room.move(userType, from, to))
+      .then(()=> cb(room.serializePlayingInfo(userType)))
+      .catch(()=> cb(false));
+  });
+
+  // socket.on('disconnect', ()=> {
+  //   socket.to(room.token).emit('user:disconnect', userType);
+  // });
 });

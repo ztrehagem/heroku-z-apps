@@ -2,10 +2,18 @@
   <table border="1">
     <tbody>
       <tr ng-repeat="row in $ctrl.field track by $index">
-        <td ng-repeat="cell in row track by $index" ng-click="$ctrl.select(cell)">
+        <td ng-repeat="cell in row track by $index" ng-click="$ctrl.onClickCell(cell)">
           {{cell.type || '&emsp;'}}
         </td>
       </tr>
     </tbody>
   </table>
+</div>
+
+<div>
+  {{$ctrl.selected}}
+</div>
+
+<div>
+  {{$ctrl.movingPromise}}
 </div>
