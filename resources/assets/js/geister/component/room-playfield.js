@@ -11,13 +11,12 @@ app.component('roomPlayfield', {
       this.selected = null;
 
       this.roomCtrl.socket.emit('get-field', null, field => {
-        this.field = (this.roomCtrl.userType == 'host' ? field : field.reverse())
-          .reduce((result, raw, index)=> {
-            const {x, y} = indexToVector(index);
-            if (!result[y]) result[y] = [];
-            result[y][x] = new Cell(raw, x, y);
-            return result;
-          }, []);
+        this.field = field.reduce((result, raw, index)=> {
+          const {x, y} = indexToVector(index);
+          if (!result[y]) result[y] = [];
+          result[y][x] = new Cell(raw, x, y);
+          return result;
+        }, []);
       });
     };
 

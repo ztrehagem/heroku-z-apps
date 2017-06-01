@@ -134,7 +134,7 @@ module.exports = class Room {
   }
 
   serializeField(userType) {
-    return this.field.map(typeStr => {
+    return (userType == UserType.GUEST ? this.field.reverse() : this.field).map(typeStr => {
       if (typeStr == '0') {
         return null; // no object
       } else if (typeStr[0] == userType[0]) {
