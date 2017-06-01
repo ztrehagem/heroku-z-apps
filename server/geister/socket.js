@@ -21,7 +21,7 @@ module.exports = io => io.on('connection', socket => {
         }
         cb({userType, room: room.serializeSummary()});
       });
-    });
+    }).catch(()=> cb(null));
   });
 
   socket.on('ready', (formation, cb)=> {
