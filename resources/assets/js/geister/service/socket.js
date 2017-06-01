@@ -1,10 +1,18 @@
 app.factory('Socket', function($rootScope, $q) {
   'ngInject';
 
-  const makeAsyncCb = (cb)=> (data)=> {
+  const cbFn = (deferred)=> (data, cb)=> {
+    deferred[data ? 'resolve' : 'reject']([data, makeAsyncCb(cb)]);
+  };
+
+  const defer = (fn)=> {
     const deferred = $q.defer();
-    cb(data, (data, cb)=> deferred.resolve([data, makeAsyncCb(cb)]));
+    fn(deferred);
     return deferred.promise;
+  };
+
+  const makeAsyncCb = (cb)=> (data)=> {
+    return defer(deferred => cb(data, cbFn(deferred)));
   };
 
   return class Socket {
@@ -27,11 +35,7 @@ app.factory('Socket', function($rootScope, $q) {
       }));
     }
     emitAsync(name, arg) {
-      const deferred = $q.defer();
-      this.socket.emit(name, arg, (data, cb)=> {
-        deferred.resolve([data, makeAsyncCb(cb)]);
-      });
-      return deferred.promise;
+      return defer(deferred => this.socket.emit(name, arg, cbFn(deferred)));
     }
   };
 });
