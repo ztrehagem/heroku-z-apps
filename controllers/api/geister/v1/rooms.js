@@ -1,9 +1,9 @@
 const Room = require('server/geister/room');
 
 exports.index = (req, resp, uriParams)=> {
-  Room.index().then((rooms = [])=> {
-    resp.respondJson(rooms.map(room => room.serializeSummary()));
-  });
+  Room.index()
+    .then(rooms => resp.respondJson(rooms.map(room => room.serializeSummary())))
+    .catch(()=> resp.respondMessageJson(HttpStatus.INTERNAL_SERVER_ERROR));
 };
 
 exports.create = (req, resp, uriParams)=> {
@@ -12,10 +12,9 @@ exports.create = (req, resp, uriParams)=> {
     return resp.respondMessageJson(HttpStatus.BAD_REQUEST);
   }
 
-  Room.create(req.session.data.id, name).then(room => {
-    if (room) resp.respondJson(room.serializeSummary());
-    else resp.respondMessageJson(HttpStatus.INTERNAL_SERVER_ERROR);
-  });
+  Room.create(req.session.data.id, name)
+    .then(room => resp.respondJson(room.serializeSummary()))
+    .catch(()=> resp.respondMessageJson(HttpStatus.INTERNAL_SERVER_ERROR));
 };
 
 exports.join = (req, resp, uriParams)=> {
@@ -24,11 +23,9 @@ exports.join = (req, resp, uriParams)=> {
     return resp.respondMessageJson(HttpStatus.BAD_REQUEST);
   }
 
-  const token = uriParams.token;
-  Room.join(token, req.session.data.id, name).then(ok => {
-    if (ok) resp.respondMessageJson(HttpStatus.NO_CONTENT);
-    else resp.respondMessageJson(HttpStatus.FORBIDDEN);
-  });
+  new Room(uriParams.token).join(req.session.data.id, name)
+    .then(() => resp.respondMessageJson(HttpStatus.NO_CONTENT))
+    .catch(()=> resp.respondMessageJson(HttpStatus.FORBIDDEN));
 };
 
 exports.leave = (req, resp, uriParams)=> {
