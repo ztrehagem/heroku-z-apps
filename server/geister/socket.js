@@ -2,17 +2,19 @@ const Room = require('./room');
 
 module.exports = io => io.on('connection', socket => {
 
-  let userId, userType, room;
+  let userId, userType, roomToken;
 
   socket.on('join', ({id, token}, cb)=> {
     userId = id;
 
-    new Room(token).fetchSummary().then(tmpRoom => {
-      if (!tmpRoom.isPlayer(userId)) return cb(false);
+    const room = new Room(token);
 
-      room = tmpRoom;
+    room.fetch([Room.KeyType.SUMMARY]).then(()=> {
+      if (!room.isPlayer(userId)) return Promise.reject();
 
       socket.join(room.token, ()=> {
+        roomToken = token;
+
         if (room.isHost(userId)) {
           userType = Room.UserType.HOST;
         } else if (room.isGuest(userId)) {
@@ -21,43 +23,37 @@ module.exports = io => io.on('connection', socket => {
         }
         cb({userType, room: room.serializeSummary()});
       });
-    }).catch(()=> cb(null));
+    }).catch(err => {
+      console.log('faield on socket join', err);
+      cb(null);
+    });
   });
 
   socket.on('ready', (formation, cb)=> {
-    room.fetchSummary()
-      .then(()=> room.ready(userType, formation))
-      .then(()=> io.to(room.token).emit('ready', {userType}))
-      .then(()=> cb(true))
-      .then(()=> room.fetchSummary())
-      .then(()=> room.isPlayable ? room.play().then(()=> io.to(room.token).emit('started')) : null)
-      .catch(()=> {
-        console.log('error on ready');
-        cb(false);
-      });
+    const room = new Room(roomToken);
+    room.ready(userType, formation).then(()=> {
+      io.to(room.token).emit('ready', {userType});
+      cb(true);
+    }).then(()=> {
+      room.play()
+        .then(()=> io.to(room.token).emit('started'))
+        .catch(()=> null);
+    }).catch(err => {
+      console.log('faield on socket ready', err);
+      cb(null);
+    });
   });
 
   socket.on('get-playing-info', (data, cb)=> {
     if (!userType) return cb(false);
-    room.fetchSummary()
-      .then(()=> room.fetchField())
-      .then(()=> cb(room.serializePlayingInfo(userType)))
-      .catch(()=> {
-        console.log('error on get-field');
-        cb(false);
-      });
-  });
 
-  socket.on('move', ({from, to}, cb)=> {
-    return room.updateSummary()
-      .then(()=> room.isTurn(userType) ? null : Promise.reject())
-      .then(()=> room.updateField())
-      .then(()=> room.move(userType, from, to))
-      .then(()=> cb(room.serializePlayingInfo(userType)))
-      .catch(()=> cb(false));
-  });
+    const room = new Room(roomToken);
 
-  // socket.on('disconnect', ()=> {
-  //   socket.to(room.token).emit('user:disconnect', userType);
-  // });
+    room.fetch([Room.KeyType.SUMMARY, Room.KeyType.FIELD]).then(()=> {
+      cb(room.serializePlayingInfo(userType));
+    }).catch(err => {
+      console.log('failed on socket get-playing-info', err);
+      cb(null);
+    });
+  });
 });
