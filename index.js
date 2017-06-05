@@ -8,6 +8,16 @@ const redis = require('redis');
 bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
 
+Promise.prototype.pfinally = function(fn) {
+  return this.then(result => {
+    fn();
+    return result;
+  }).catch(err => {
+    fn();
+    return Promise.reject(err);
+  });
+};
+
 models.sequelize.sync().then(()=> {
   server().listen(process.env.PORT);
   console.log('server has started');
