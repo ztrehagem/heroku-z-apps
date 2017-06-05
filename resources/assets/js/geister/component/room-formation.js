@@ -14,6 +14,7 @@ app.component('roomFormation', {
     this.decide = ()=> {
       this.sending = true;
       this.roomCtrl.socket.emit('ready', this.formation, (data)=> {
+        console.log('ready, received', data);
         if (!data) {
           this.sending = false;
           console.log('invalid formation');

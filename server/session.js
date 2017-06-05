@@ -1,4 +1,4 @@
-const redis = require('server/redis');
+const redis = require('server/redis-client').global;
 const utils = require('utils');
 const redisUtils = require('utils/redis');
 const colors = require('utils/colors');

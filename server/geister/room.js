@@ -1,23 +1,30 @@
-const redis = require('server/redis');
+const redisClient = require('server/redis-client');
 const utils = require('utils');
 const redisUtils = require('utils/redis');
 const UUID = require('uuid/v4');
 
-const EXPIRE = '' + (60 * 20); // 20 minutes
+const KeyType = {
+  SUMMARY: 'summary',
+  FIELD: 'field',
+  MOVES: 'moves'
+};
+const UserType = {
+  HOST: 'host',
+  GUEST: 'guest'
+};
 const KEY_PREFIX = 'geister';
-const KEY_SUMMARY = token => `${KEY_PREFIX}:summary:${token}`;
-const KEY_FIELD = token => `${KEY_PREFIX}:field:${token}`;
-const KEY_MOVES = token => `${KEY_PREFIX}:moves:${token}`;
+const EXPIRE = '' + (60 * 20); // 20 minutes
 
-const UserType = {HOST: 'host', GUEST: 'guest'};
-
+const makeKey = (keyType, token)=> [KEY_PREFIX, keyType, token].join(':');
+const keyToToken = (keyType, key)=> key.match(new RegExp('^' + makeKey(keyType, '(.*)') + '$'))[1];
+const pointToIndex = ({x, y})=> y * 6 + x;
+const symmetryPoint = ({x, y})=> ({x: 6 - x, y: 6 - y});
 const inverseUserType = userType => {
   switch (userType) {
     case UserType.HOST: return UserType.GUEST;
     case UserType.GUEST: return UserType.HOST;
   }
 };
-
 const createInitialSummary = (hostId, hostName)=> ({
   createdAt: new Date().toUTCString(),
   players: {
@@ -28,95 +35,149 @@ const createInitialSummary = (hostId, hostName)=> ({
   }
 });
 
-const fieldVectorToIndex = ({x, y})=> y * 6 + x;
-
-const reverseVector = ({x, y})=> ({x: 6 - x, y: 6 - y});
+const pfinally = (promise, fn)=> {
+  return promise.then(result => {
+    fn();
+    return result;
+  }).catch(err => {
+    fn();
+    return Promise.reject(err);
+  });
+};
 
 module.exports = class Room {
+  // -- public
+
   static get UserType() {
     return UserType;
   }
 
-  static index() {
-    const keyPattern = KEY_SUMMARY('*');
-    const regexp = new RegExp(`^${KEY_SUMMARY('(.*)')}$`);
-    const keyToToken = key => key.match(regexp)[1];
+  static get KeyType() {
+    return KeyType;
+  }
 
-    return redis.keysAsync(keyPattern)
-      .then(keys => keys.map(key => new Room(keyToToken(key))))
-      .then(rooms => rooms.map(room => room.fetchSummary()))
+  constructor(token) {
+    this.token = token;
+  }
+
+  static index() {
+    const redis = redisClient();
+    const keyPattern = makeKey(KeyType.SUMMARY, '*');
+
+    const ret = redis.keysAsync(keyPattern)
+      .then(keys => keys.map(key => keyToToken(KeyType.SUMMARY, key)))
+      .then(tokens => tokens.map(token => new Room(token)))
+      .then(rooms => rooms.map(room =>
+        room.fetch([KeyType.SUMMARY], redis)
+          .then(()=> room)
+          .catch(()=> null)
+      ))
       .then(promises => Promise.all(promises))
-      .catch(()=> null);
+      .then(rooms => rooms.filter(room => !!room));
+    return pfinally(ret, ()=> redis.quit());
   }
 
   static create(hostId, hostName) {
     const room = new Room(UUID());
+    const redis = redisClient();
     const summary = createInitialSummary(hostId, hostName);
     const values = utils.joinArray(utils.objectToArray(redisUtils.buildHash(summary)));
 
-    return room.update(m => m.hmset(room.summaryKey, values))
+    const queue = redis.multi().hmset(room.summaryKey, values);
+    const ret = room.appendExpire(queue).execAsync()
       .then(()=> room.summary = summary)
       .then(()=> room);
+    return pfinally(ret, ()=> redis.quit());
   }
 
-  static join(token, guestId, guestName) {
-    const room = new Room(token);
+  join(guestId, guestName) {
+    const redis = redisClient();
 
-    return room.fetchSummary()
-      .then(()=> !room.isHost(guestId) ? Promise.resolve() : Promise.reject())
-      .then(()=> room.update(m =>
-        m.hsetnx(room.summaryKey, 'players:guest:id', guestId)
-        .hsetnx(room.summaryKey, 'players:guest:name', guestName))
-      )
-      .then(([result]) => (result == 1) ? Promise.resolve() : Promise.reject());
+    const ret = this.watch([KeyType.SUMMARY], redis, multi => {
+      if (this.isHost(guestId)) return; // 自分がホストなのにguestとしてjoinしようとした
+      if (!!this.guest) return; // guestが既にいる
+      return multi
+        .hset(this.summaryKey, 'players:guest:id', guestId)
+        .hset(this.summaryKey, 'players:guest:name', guestName);
+    });
+    return pfinally(ret, ()=> redis.quit());
   }
 
-  constructor(token) {
-    this._token = token;
+  ready(userType, formation) {
+    const isValid = formation.reduce((sum, f)=> sum + f, 0) == 4;
+    if (!isValid) {
+      return Promise.reject();
+    }
+
+    const value = JSON.stringify(formation.map(f => f ? 1 : 0));
+    const redis = redisClient();
+
+    const ret = this.watch([KeyType.SUMMARY], redis, multi => {
+      if (this.isReady(userType)) return;
+      return multi.hset(this.summaryKey, `players:${userType}:formation`, value);
+    });
+    return pfinally(ret, ()=> redis.quit());
   }
 
-  get token() {
-    return this._token;
+  play() {
+    const redis = redisClient();
+    const ret = this.watch([KeyType.SUMMARY], redis, multi => {
+      if (!this.isPlayable) return;
+      const host = JSON.parse(this.host.formation).map(i => i ? 'h+' : 'h-');
+      const guest = JSON.parse(this.guest.formation).map(i => i ? 'g+' : 'g-');
+      const field = [
+        0, ...guest.slice(4, 8).reverse(), 0,
+        0, ...guest.slice(0, 4).reverse(), 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, ...host.slice(0, 4), 0,
+        0, ...host.slice(4, 8), 0
+      ];
+      const firstUser = Object.values(UserType)[Math.floor(Math.random() * 2)];
+      return multi.hset(this.summaryKey, 'turn', firstUser)
+        .rpush(this.fieldKey, field);
+    });
+    return pfinally(ret, ()=> redis.quit());
   }
 
-  get summary() {
-    return this._summary;
+  move() { // contains escape
+
   }
 
-  set summary(rawSummary) {
-    this._summary = redisUtils.parseHash(rawSummary);
+  // -- private
+
+  watch(keyTypes, redis, multiFn, setExpire = true) {
+    const keys = keyTypes.map(keyType => makeKey(keyType, this.token));
+
+    const proc = (tryCount)=> {
+      console.log('try', tryCount);
+      return redis.watchAsync(keys)
+        .then(()=> this.fetch(keyTypes, redis))
+        .then(()=> multiFn(redis.multi()))
+        .then(queue => (queue && setExpire) ? this.appendExpire(queue) : queue)
+        .then(queue => queue ? queue.execAsync() : Promise.reject())
+        .then(replies => replies || (tryCount < 3 ? proc(tryCount + 1) : Promise.reject('tried 3 times in watch')));
+    };
+
+    return proc(1);
   }
 
-  get summaryKey() {
-    return KEY_SUMMARY(this.token);
+  fetch(keyTypes, redisArg) {
+    const redis = redisArg || redisClient();
+    const promises = [];
+    if (keyTypes.includes(KeyType.SUMMARY))
+      promises.push(redis.hgetallAsync(this.summaryKey).then(reply => this.summary = reply));
+    if (keyTypes.includes(KeyType.FIELD))
+      promises.push(redis.lrangeAsync(this.fieldKey, 0, -1).then(reply => this.field = reply));
+    if (keyTypes.includes(KeyType.MOVES))
+      promises.push(redis.lrangeAsync(this.movesKey, 0, -1).then(reply => this.moves = reply));
+    return pfinally(Promise.all(promises), ()=> redisArg || redis.quit());
   }
 
-  get fieldKey() {
-    return KEY_FIELD(this.token);
-  }
-
-  get movesKey() {
-    return KEY_MOVES(this.token);
-  }
-
-  fetchSummary() {
-    return redis.hgetallAsync(this.summaryKey)
-      .then(summary => this.summary = summary)
-      .then(()=> this);
-  }
-
-  fetchField() {
-    return redis.lrangeAsync(this.fieldKey, 0, -1)
-      .then(field => this.field = field)
-      .then(()=> this);
-  }
-
-  update(fn) {
-    return fn(redis.multi())
-      .expire(this.summaryKey, EXPIRE)
+  appendExpire(queue) {
+    return queue.expire(this.summaryKey, EXPIRE)
       .expire(this.fieldKey, EXPIRE)
-      .expire(this.movesKey, EXPIRE)
-      .execAsync();
+      .expire(this.movesKey, EXPIRE);
   }
 
   serializeSummary() {
@@ -157,6 +218,28 @@ module.exports = class Room {
     });
   }
 
+  get summary() {
+    return this._summary;
+  }
+
+  set summary(rawSummary) {
+    this._summary = redisUtils.parseHash(rawSummary);
+  }
+
+  get summaryKey() {
+    return makeKey(KeyType.SUMMARY, this.token);
+  }
+
+  get fieldKey() {
+    return makeKey(KeyType.FIELD, this.token);
+  }
+
+  get movesKey() {
+    return makeKey(KeyType.MOVES, this.token);
+  }
+
+  // -- public
+
   get status() {
     if (this.playing) return 'playing'; // ゲーム進行中
     if (!this.accepting) return 'ready'; // 準備中
@@ -180,7 +263,7 @@ module.exports = class Room {
     return this.summary.turn;
   }
 
-  isTuen(userType) {
+  isTurn(userType) {
     return this.turn == userType;
   }
 
@@ -204,79 +287,20 @@ module.exports = class Room {
     return this.isHost(id) || this.isGuest(id);
   }
 
+  isReady(userType) {
+    return this[userType] && !!this[userType].formation;
+  }
+
   get isHostReady() {
-    return this.host && !!this.host.formation;
+    return this.isReady(UserType.HOST);
   }
 
   get isGuestReady() {
-    return this.guest && !!this.guest.formation;
+    return this.isReady(UserType.GUEST);
   }
 
   get isPlayable() {
     return this.isHostReady && this.isGuestReady;
   }
 
-  ready(userType, formation) {
-    if (!Object.values(UserType).includes(userType)) {
-      return Promise.reject();
-    }
-    const isValid = formation.reduce((sum, f)=> sum + f, 0) == 4;
-    if (!isValid) {
-      return Promise.reject();
-    }
-    const mappedFormation = formation.map(f => f ? 1 : 0);
-    const formationStr = `[${mappedFormation.join(',')}]`;
-    const hashKey = `players:${userType}:formation`;
-    return this.update(m => m.hset(this.summaryKey, hashKey, formationStr));
-  }
-
-  play() {
-    if (!this.isPlayable) {
-      return Promise.reject();
-    }
-    const host = JSON.parse(this.host.formation).map(i => i ? 'h+' : 'h-');
-    const guest = JSON.parse(this.guest.formation).map(i => i ? 'g+' : 'g-');
-    const field = [
-      0, ...guest.slice(4, 8).reverse(), 0,
-      0, ...guest.slice(0, 4).reverse(), 0,
-      0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0,
-      0, ...host.slice(0, 4), 0,
-      0, ...host.slice(4, 8), 0
-    ];
-    const firstUser = Object.values(UserType)[Math.floor(Math.random() * 2)];
-    return this.update(m =>
-      m.hset(this.summaryKey, 'turn', firstUser)
-      .rpush(this.fieldKey, field)
-    );
-  }
-
-  move(userType, from, to) {
-    if (!Object.values(UserType).includes(userType)) return Promise.reject();
-    if (userType == UserType.GUSET) {
-      from = reverseVector(from);
-      to = reverseVector(to);
-    }
-    const fromIndex = fieldVectorToIndex(from);
-    const fromType = this.field[fromIndex];
-    const fromIsMine = fromType[0] == userType[0];
-    if (!fromIsMine) return Promise.reject();
-    const toIndex = fieldVectorToIndex(to);
-    const toType = this.field[toIndex];
-    const toIsMine = toType[0] == userType[0];
-    if (toIsMine) return Promise.reject();
-    const isNextTo = Math.abs(from.x - to.x) + Math.abs(from.y - to.y) == 1;
-    if (!isNextTo) return Promise.reject();
-    return this.update(m =>
-      m.lset(this.fieldKey, fromIndex, 0)
-      .lset(this.fieldKey, toIndex, fromType)
-      .hset(this.summaryKey, 'turn', inverseUserType(userType))
-    )
-    .then(()=> this.fetchField())
-    .then(()=> this.isFinished);
-  }
-
-  // escape(userType, target) {
-  //   if (!Object.values(UserType).includes(userType)) return Promise.reject();
-  // }
 };
