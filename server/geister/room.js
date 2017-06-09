@@ -140,8 +140,36 @@ module.exports = class Room {
     return pfinally(ret, ()=> redis.quit());
   }
 
-  move() { // contains escape
+  move(userType, from, dest) { // contains escape
+    const redis = redisClient();
+    if (userType == UserType.GUEST) {
+      from = symmetryPoint(from);
+      dest = dest && symmetryPoint(dest);
+    }
 
+    const ret = this.watch([KeyType.SUMMARY, KeyType.FIELD], redis, multi => {
+      if (!this.isTurn(userType)) return;
+
+      const fromCell = this.field[pointToIndex(from)];
+
+      if (destCell) {
+        const destCell = dest && this.field[pointToIndex(dest)];
+        if (!fromCell.isMovableTo(destCell, userType)) return;
+        const queue = multi
+          .lset(this.fieldKey, fromCell.toIndex(), 0)
+          .lset(this.fieldKey, destCell.toIndex(), fromCell.type)
+          .hset(this.summaryKey, 'turn', inverseUserType(userType));
+        // TODO check won
+        return queue;
+      } else {
+        if (!fromCell.isEscapable(userType)) return;
+        // TODO move
+      }
+
+
+      // TODO
+    });
+    return pfinally(ret, ()=> redis.quit());
   }
 
   // -- private
@@ -199,11 +227,11 @@ module.exports = class Room {
   }
 
   serializeField(userType) {
-    return (userType == UserType.GUEST ? this.field.reverse() : this.field).map(typeStr => {
-      if (typeStr == '0') {
+    return (userType == UserType.GUEST ? this.field.reverse() : this.field).map(cell => {
+      if (!cell.type) {
         return null; // no object
-      } else if (typeStr[0] == userType[0]) {
-        return typeStr[1]; // my object
+      } else if (cell.type[0] == userType[0]) {
+        return cell.type[1]; // my object
       } else {
         return 'e'; // enemy object
       }
@@ -213,6 +241,7 @@ module.exports = class Room {
   serializePlayingInfo(userType) {
     // return Object.assign(this.serializeSummary(), {
     return ({
+      won: this.won,
       turn: this.turn,
       field: this.serializeField(userType)
     });
@@ -224,6 +253,14 @@ module.exports = class Room {
 
   set summary(rawSummary) {
     this._summary = redisUtils.parseHash(rawSummary);
+  }
+
+  get field() {
+    return this._field;
+  }
+
+  set field(rawField) {
+    this._field = rawField.map((raw, index) => new Cell(raw, index));
   }
 
   get summaryKey() {
@@ -255,9 +292,9 @@ module.exports = class Room {
     return !!this.turn;
   }
 
-  // get won() {
-  //   return this.summary.won;
-  // }
+  get won() {
+    return this.summary.won;
+  }
 
   get turn() {
     return this.summary.turn;
@@ -304,3 +341,38 @@ module.exports = class Room {
   }
 
 };
+
+class Cell {
+  constructor(raw, index) {
+    this.type = raw == '0' ? null : raw;
+    this.x = index % 6;
+    this.y = Math.floor(index / 6);
+  }
+
+  isMine(userType) {
+    return this.type && (this.type[0] == userType[0]);
+  }
+
+  isNextTo(cell) {
+    return Math.abs(cell.x - this.x) + Math.abs(cell.y - this.y) == 1;
+  }
+
+  isFurtherCorner(userType) {
+    switch (userType) {
+      case UserType.HOST: return this.y === 0 && (this.x === 0 || this.x === 5);
+      case UserType.GUEST: return this.y === 5 && (this.x === 0 || this.x === 5);
+    }
+  }
+
+  isMovableTo(cell, userType) {
+    return !cell.isMine(userType) && this.isNextTo(cell);
+  }
+
+  isEscapable(userType) {
+    return this.isMine(userType) && this.isFurtherCorner(userType);
+  }
+
+  toIndex() {
+    return this.x + this.y * 6;
+  }
+}

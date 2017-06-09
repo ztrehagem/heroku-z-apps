@@ -10,7 +10,7 @@ module.exports = io => io.on('connection', socket => {
     const room = new Room(token);
 
     room.fetch([Room.KeyType.SUMMARY]).then(()=> {
-      if (!room.isPlayer(userId)) return Promise.reject();
+      if (!room.isPlayer(userId)) return cb(false);
 
       socket.join(room.token, ()=> {
         roomToken = token;
@@ -30,7 +30,10 @@ module.exports = io => io.on('connection', socket => {
   });
 
   socket.on('ready', (formation, cb)=> {
+    if (!userType) return cb(false);
+
     const room = new Room(roomToken);
+
     room.ready(userType, formation).then(()=> {
       io.to(room.token).emit('ready', {userType});
       cb(true);
@@ -53,6 +56,24 @@ module.exports = io => io.on('connection', socket => {
       cb(room.serializePlayingInfo(userType));
     }).catch(err => {
       console.log('failed on socket get-playing-info', err);
+      cb(null);
+    });
+  });
+
+  socket.on('move', ({from, to}, cb)=> {
+    if (!userType) return cb(false);
+
+    const room = new Room(roomToken);
+
+    room.move(userType, from, to).then(()=> {
+      cb(room.serializePlayingInfo(userType));
+      if (room.won) {
+        socket.to(room.token).emit('finished', room.won);
+      } else {
+        socket.to(room.token).emit('switch-turn', room.turn);
+      }
+    }).catch(err => {
+      console.log('failed on socket move', err);
       cb(null);
     });
   });

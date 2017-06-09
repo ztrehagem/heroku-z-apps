@@ -38,7 +38,7 @@ app.component('roomPlayfield', {
 
     this.onClickEscape = ()=> {
       if (this.selected && this.selected.isEscapable()) {
-        doEscape();
+        doMove();
       }
     };
 
@@ -54,28 +54,36 @@ app.component('roomPlayfield', {
     };
 
     const doMove = (cell)=> {
-      console.log('emit move', this.selected, cell);
-      unselect();
-      // this.emitting = this.roomCtrl.socket.emitAsync('move', {
-      //   from: {x: this.selected.x, y: this.selected.y},
-      //   to: {x: cell.x, y: cell.y}
-      // }).then(([{won, turn, field}, cbAsync])=> {
-      //   if (won) {
-      //     this.roomCtrl.finish(won);
-      //   } else {
-      //     this.turn = turn;
-      //     this.field = field;
-      //   }
-      // }).catch(()=> {
-      //   console.log('failed move', this.selected, cell);
-      // }).finally(()=> {
-      //   unselect();
-      // });
+      if (cell) {
+        console.log('emit move', this.selected, cell);
+      } else {
+        console.log('emit escape', this.selected);
+      }
+      this.emitting = this.roomCtrl.socket.emitAsync('move', {
+        from: this.selected.toPoint(),
+        to: cell.toPoint()
+      }).then(([{won, turn, field}, cbAsync])=> {
+        console.log({won, turn, field});
+        // apply field
+        if (won) {
+          // apply won
+        } else {
+          // confirm turn
+        }
+      }).catch(()=> {
+        if (cell) {
+          console.log('failed move', this.selected, cell);
+        } else {
+          console.log('failed escape', this.selected);
+        }
+      }).finally(()=> {
+        unselect();
+      });
     };
 
     const doEscape = ()=> {
-      console.log('emit escape', this.selected);
-      unselect();
+      // unselect();
+
       // this.emitting = this.roomCtrl.socket.emitAsync('escape', {
       //   x: this.selected.x,
       //   t: this.selected.y
@@ -113,6 +121,9 @@ app.component('roomPlayfield', {
       }
       isCorner() {
         return this.y === 0 && (this.x === 0 || this.x === 5);
+      }
+      toPoint() {
+        return {x: this.x, y: this.y};
       }
     }
 
