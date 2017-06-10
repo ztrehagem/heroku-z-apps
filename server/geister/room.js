@@ -12,13 +12,21 @@ const UserType = {
   HOST: 'host',
   GUEST: 'guest'
 };
+const CellType = {
+  HOST_GOOD: 'h+',
+  HOST_BAD: 'h-',
+  GUEST_GOOD: 'g+',
+  GUEST_BAD: 'g-',
+  NONE: '0',
+  ENEMY: 'e'
+};
 const KEY_PREFIX = 'geister';
 const EXPIRE = '' + (60 * 20); // 20 minutes
 
 const makeKey = (keyType, token)=> [KEY_PREFIX, keyType, token].join(':');
 const keyToToken = (keyType, key)=> key.match(new RegExp('^' + makeKey(keyType, '(.*)') + '$'))[1];
 const pointToIndex = ({x, y})=> y * 6 + x;
-const symmetryPoint = ({x, y})=> ({x: 6 - x, y: 6 - y});
+const symmetryPoint = ({x, y})=> ({x: 5 - x, y: 5 - y});
 const inverseUserType = userType => {
   switch (userType) {
     case UserType.HOST: return UserType.GUEST;
@@ -54,6 +62,10 @@ module.exports = class Room {
 
   static get KeyType() {
     return KeyType;
+  }
+
+  static inverseUserType(userType) {
+    return inverseUserType(userType);
   }
 
   constructor(token) {
@@ -121,10 +133,11 @@ module.exports = class Room {
 
   play() {
     const redis = redisClient();
+    const firstUser = Object.values(UserType)[Math.floor(Math.random() * 2)];
     const ret = this.watch([KeyType.SUMMARY], redis, multi => {
       if (!this.isPlayable) return;
-      const host = JSON.parse(this.host.formation).map(i => i ? 'h+' : 'h-');
-      const guest = JSON.parse(this.guest.formation).map(i => i ? 'g+' : 'g-');
+      const host = JSON.parse(this.host.formation).map(i => i ? CellType.HOST_GOOD : CellType.HOST_BAD);
+      const guest = JSON.parse(this.guest.formation).map(i => i ? CellType.GUEST_GOOD : CellType.GUEST_BAD);
       const field = [
         0, ...guest.slice(4, 8).reverse(), 0,
         0, ...guest.slice(0, 4).reverse(), 0,
@@ -133,10 +146,9 @@ module.exports = class Room {
         0, ...host.slice(0, 4), 0,
         0, ...host.slice(4, 8), 0
       ];
-      const firstUser = Object.values(UserType)[Math.floor(Math.random() * 2)];
       return multi.hset(this.summaryKey, 'turn', firstUser)
         .rpush(this.fieldKey, field);
-    });
+    }).then(()=> firstUser);
     return pfinally(ret, ()=> redis.quit());
   }
 
@@ -147,28 +159,24 @@ module.exports = class Room {
       dest = dest && symmetryPoint(dest);
     }
 
-    const ret = this.watch([KeyType.SUMMARY, KeyType.FIELD], redis, multi => {
-      if (!this.isTurn(userType)) return;
+    let ret = null;
 
-      const fromCell = this.field[pointToIndex(from)];
-
-      if (destCell) {
-        const destCell = dest && this.field[pointToIndex(dest)];
+    if (dest) { // move
+      ret = this.watch([KeyType.SUMMARY, KeyType.FIELD], redis, multi => {
+        if (!this.isTurn(userType)) return;
+        const fromCell = this.field[pointToIndex(from)];
+        const destCell = this.field[pointToIndex(dest)];
         if (!fromCell.isMovableTo(destCell, userType)) return;
-        const queue = multi
-          .lset(this.fieldKey, fromCell.toIndex(), 0)
+
+        return multi
+          .lset(this.fieldKey, fromCell.toIndex(), CellType.NONE)
           .lset(this.fieldKey, destCell.toIndex(), fromCell.type)
-          .hset(this.summaryKey, 'turn', inverseUserType(userType));
-        // TODO check won
-        return queue;
-      } else {
-        if (!fromCell.isEscapable(userType)) return;
-        // TODO move
-      }
+          .hset(this.summaryKey, 'turn', inverseUserType(userType))
+          .lrange(this.fieldKey, 0, -1);
+      }).then(([,,, field])=> this.field = field);
+    } else { // escape
 
-
-      // TODO
-    });
+    }
     return pfinally(ret, ()=> redis.quit());
   }
 
@@ -227,15 +235,16 @@ module.exports = class Room {
   }
 
   serializeField(userType) {
-    return (userType == UserType.GUEST ? this.field.reverse() : this.field).map(cell => {
-      if (!cell.type) {
+    const filteredField = this.field.map(cell => {
+      if (cell.type == CellType.NONE) {
         return null; // no object
       } else if (cell.type[0] == userType[0]) {
         return cell.type[1]; // my object
       } else {
-        return 'e'; // enemy object
+        return CellType.ENEMY; // enemy object
       }
     });
+    return (userType == UserType.GUEST ? filteredField.reverse() : filteredField);
   }
 
   serializePlayingInfo(userType) {
@@ -293,7 +302,13 @@ module.exports = class Room {
   }
 
   get won() {
-    return this.summary.won;
+    const remain = {};
+    Object.values(CellType).forEach(type => remain[type] = 0);
+    this.field.forEach(cell => remain[cell.type] += 1);
+    if (!remain[CellType.HOST_GOOD]) return UserType.GUEST;
+    if (!remain[CellType.HOST_BAD]) return UserType.HOST;
+    if (!remain[CellType.GUEST_GOOD]) return UserType.HOST;
+    if (!remain[CellType.GUEST_BAD]) return UserType.GUSET;
   }
 
   get turn() {
@@ -343,14 +358,14 @@ module.exports = class Room {
 };
 
 class Cell {
-  constructor(raw, index) {
-    this.type = raw == '0' ? null : raw;
+  constructor(type, index) {
+    this.type = type;
     this.x = index % 6;
     this.y = Math.floor(index / 6);
   }
 
   isMine(userType) {
-    return this.type && (this.type[0] == userType[0]);
+    return this.type[0] == userType[0];
   }
 
   isNextTo(cell) {
@@ -374,5 +389,10 @@ class Cell {
 
   toIndex() {
     return this.x + this.y * 6;
+  }
+
+  moveTo(cell) {
+    cell.type = this.type;
+    this.type = CellType.NONE;
   }
 }

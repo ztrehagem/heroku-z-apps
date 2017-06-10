@@ -29,9 +29,10 @@ app.component('room', {
         this.players[userType].ready = true;
       });
 
-      this.socket.on('started', ()=> {
+      this.socket.on('started', ({firstUser})=> {
         console.log('started!');
         this.status = 'playing';
+        this.firstUser = firstUser;
       });
     };
   }

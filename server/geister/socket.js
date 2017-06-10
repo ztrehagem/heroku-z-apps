@@ -39,7 +39,7 @@ module.exports = io => io.on('connection', socket => {
       cb(true);
     }).then(()=> {
       room.play()
-        .then(()=> io.to(room.token).emit('started'))
+        .then(firstUser => io.to(room.token).emit('started', {firstUser}))
         .catch(()=> null);
     }).catch(err => {
       console.log('faield on socket ready', err);
@@ -68,9 +68,9 @@ module.exports = io => io.on('connection', socket => {
     room.move(userType, from, to).then(()=> {
       cb(room.serializePlayingInfo(userType));
       if (room.won) {
-        socket.to(room.token).emit('finished', room.won);
+        socket.to(room.token).emit('finished', room.serializePlayingInfo(Room.inverseUserType(userType)));
       } else {
-        socket.to(room.token).emit('switch-turn', room.turn);
+        socket.to(room.token).emit('switch-turn', room.serializePlayingInfo(Room.inverseUserType(userType)));
       }
     }).catch(err => {
       console.log('failed on socket move', err);

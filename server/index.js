@@ -13,7 +13,7 @@ module.exports = (()=> {
   const server = HTTP.createServer((req, resp)=> handle(req, resp));
   require('./socket')(server);
   return server;
-})
+});
 
 function handle(req, resp) {
   try {

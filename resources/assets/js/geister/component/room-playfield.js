@@ -7,19 +7,33 @@ app.component('roomPlayfield', {
     'ngInject';
 
     this.$onInit = ()=> {
-      this.turn = null;
+      this.turn = this.roomCtrl.firstUser;
       this.field = null;
       this.selected = null;
 
       this.roomCtrl.socket.emit('get-playing-info', null, ({turn, field}) => {
-        this.field = field.reduce((result, raw, index)=> {
-          const {x, y} = indexToVector(index);
-          if (!result[y]) result[y] = [];
-          result[y][x] = new Cell(raw, x, y);
-          return result;
-        }, []);
         this.turn = turn;
+        this.setField(field);
       });
+
+      this.roomCtrl.socket.on('finished', ({won})=> {
+        console.log('finished!', won);
+      });
+
+      this.roomCtrl.socket.on('switch-turn', ({turn, field})=> {
+        console.log('switch-turn', {turn, field});
+        this.turn = turn;
+        this.setField(field);
+      });
+    };
+
+    this.setField = (rawField)=> {
+      this.field = rawField.reduce((result, raw, index)=> {
+        const {x, y} = indexToVector(index);
+        if (!result[y]) result[y] = [];
+        result[y][x] = new Cell(raw, x, y);
+        return result;
+      }, []);
     };
 
     this.onClickCell = (cell)=> {
@@ -64,11 +78,11 @@ app.component('roomPlayfield', {
         to: cell.toPoint()
       }).then(([{won, turn, field}, cbAsync])=> {
         console.log({won, turn, field});
-        // apply field
+        this.setField(field);
         if (won) {
-          // apply won
+          console.log('won!!', won);
         } else {
-          // confirm turn
+          this.turn = turn;
         }
       }).catch(()=> {
         if (cell) {
@@ -79,20 +93,6 @@ app.component('roomPlayfield', {
       }).finally(()=> {
         unselect();
       });
-    };
-
-    const doEscape = ()=> {
-      // unselect();
-
-      // this.emitting = this.roomCtrl.socket.emitAsync('escape', {
-      //   x: this.selected.x,
-      //   t: this.selected.y
-      // }).then(([won])=> {
-      //   console.log('succeeded escape', won);
-      //   this.roomCtrl.finish(won);
-      // }).catch(()=> {
-      //   console.log('failed escape');
-      // });
     };
 
     class Cell {

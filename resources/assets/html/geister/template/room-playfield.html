@@ -1,3 +1,7 @@
+<div>
+  turn: {{$ctrl.turn}}
+</div>
+
 <div ng-if="$ctrl.field">
   <table border="1">
     <tbody>
@@ -15,5 +19,5 @@
 </div>
 
 <div>
-  {{$ctrl.movingPromise}}
+  {{$ctrl.emitting.$$state.status}}
 </div>
