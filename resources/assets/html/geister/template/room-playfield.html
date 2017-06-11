@@ -12,6 +12,10 @@
       </tr>
     </tbody>
   </table>
+
+  <div ng-if="$ctrl.selected.isEscapable()">
+    <button type="button" ng-click="$ctrl.onClickEscape()">escape</button>
+  </div>
 </div>
 
 <div>

@@ -15,8 +15,10 @@ const UserType = {
 const CellType = {
   HOST_GOOD: 'h+',
   HOST_BAD: 'h-',
+  HOST_ESCAPE: 'h!',
   GUEST_GOOD: 'g+',
   GUEST_BAD: 'g-',
+  GUEST_ESCAPE: 'g!',
   NONE: '0',
   ENEMY: 'e'
 };
@@ -152,35 +154,51 @@ module.exports = class Room {
     return pfinally(ret, ()=> redis.quit());
   }
 
-  move(userType, from, dest) { // contains escape
-    const redis = redisClient();
+  action(userType, from, dest) { // contains escape
     if (userType == UserType.GUEST) {
       from = symmetryPoint(from);
       dest = dest && symmetryPoint(dest);
     }
 
-    let ret = null;
+    return dest ? this.move(userType, from, dest) : this.escape(userType, from);
+  }
 
-    if (dest) { // move
-      ret = this.watch([KeyType.SUMMARY, KeyType.FIELD], redis, multi => {
-        if (!this.isTurn(userType)) return;
-        const fromCell = this.field[pointToIndex(from)];
-        const destCell = this.field[pointToIndex(dest)];
-        if (!fromCell.isMovableTo(destCell, userType)) return;
+  move(userType, from, dest) {
+    const redis = redisClient();
+    const ret = this.watch([KeyType.SUMMARY, KeyType.FIELD], redis, multi => {
+      if (this.won) return;
+      if (!this.isTurn(userType)) return;
+      const fromCell = this.field[pointToIndex(from)];
+      const destCell = this.field[pointToIndex(dest)];
+      if (!fromCell.isMovableTo(destCell, userType)) return;
 
-        return multi
-          .lset(this.fieldKey, fromCell.toIndex(), CellType.NONE)
-          .lset(this.fieldKey, destCell.toIndex(), fromCell.type)
-          .hset(this.summaryKey, 'turn', inverseUserType(userType))
-          .lrange(this.fieldKey, 0, -1)
-          .hgetall(this.summaryKey);
-      }).then(([,,, field, summary])=> {
-        this.field = field;
-        this.summary = summary;
-      });
-    } else { // escape
+      return multi
+        .lset(this.fieldKey, fromCell.toIndex(), CellType.NONE)
+        .lset(this.fieldKey, destCell.toIndex(), fromCell.type)
+        .hset(this.summaryKey, 'turn', inverseUserType(userType))
+        .lrange(this.fieldKey, 0, -1)
+        .hgetall(this.summaryKey);
+    }).then(([,,, field, summary])=> {
+      this.field = field;
+      this.summary = summary;
+    });
+    return pfinally(ret, ()=> redis.quit());
+  }
 
-    }
+  escape(userType, from) {
+    const redis = redisClient();
+    const ret = this.watch([KeyType.SUMMARY, KeyType.FIELD], redis, multi => {
+      if (this.won) return;
+      if (!this.isTurn(userType)) return;
+      const cell = this.field[pointToIndex(from)];
+      if (!cell.isEscapable(userType)) return;
+
+      return multi
+        .lset(this.fieldKey, cell.toIndex(), cell.escapeType())
+        .lrange(this.fieldKey, 0, -1);
+    }).then(([, field])=> {
+      this.field = field;
+    });
     return pfinally(ret, ()=> redis.quit());
   }
 
@@ -291,6 +309,7 @@ module.exports = class Room {
   // -- public
 
   get status() {
+    if (this.won) return 'finished'; // ゲーム終了
     if (this.playing) return 'playing'; // ゲーム進行中
     if (!this.accepting) return 'ready'; // 準備中
     return 'accepting'; // 参加受付中
@@ -305,12 +324,15 @@ module.exports = class Room {
     return !!this.turn;
   }
 
-  get won() {
+  get won() { // TODO summaryの情報とorする
+    if (!this.field) return;
     const remain = {};
     Object.values(CellType).forEach(type => remain[type] = 0);
     this.field.forEach(cell => remain[cell.type] += 1);
+    if (remain[CellType.HOST_ESCAPE]) return UserType.HOST;
     if (!remain[CellType.HOST_GOOD]) return UserType.GUEST;
     if (!remain[CellType.HOST_BAD]) return UserType.HOST;
+    if (remain[CellType.GUEST_ESCAPE]) return UserType.GUEST;
     if (!remain[CellType.GUEST_GOOD]) return UserType.HOST;
     if (!remain[CellType.GUEST_BAD]) return UserType.GUSET;
   }
@@ -372,6 +394,10 @@ class Cell {
     return this.type[0] == userType[0];
   }
 
+  isGood() {
+    return this.type == CellType.HOST_GOOD || this.type == CellType.GUEST_GOOD;
+  }
+
   isNextTo(cell) {
     return Math.abs(cell.x - this.x) + Math.abs(cell.y - this.y) == 1;
   }
@@ -388,15 +414,17 @@ class Cell {
   }
 
   isEscapable(userType) {
-    return this.isMine(userType) && this.isFurtherCorner(userType);
+    return this.isMine(userType) && this.isGood() && this.isFurtherCorner(userType);
   }
 
   toIndex() {
     return this.x + this.y * 6;
   }
 
-  moveTo(cell) {
-    cell.type = this.type;
-    this.type = CellType.NONE;
+  escapeType() {
+    switch (this.type) {
+      case CellType.HOST_GOOD: return CellType.HOST_ESCAPE;
+      case CellType.GUEST_GOOD: return CellType.GUEST_ESCAPE;
+    }
   }
 }

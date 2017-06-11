@@ -74,9 +74,9 @@ app.component('roomPlayfield', {
       } else {
         console.log('emit escape', this.selected);
       }
-      this.emitting = this.roomCtrl.socket.emitAsync('move', {
+      this.emitting = this.roomCtrl.socket.emitAsync('action', {
         from: this.selected.toPoint(),
-        to: cell.toPoint()
+        to: cell && cell.toPoint()
       }).then(([{won, turn, field}, cbAsync])=> {
         console.log({won, turn, field});
         this.setField(field);

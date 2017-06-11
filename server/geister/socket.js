@@ -60,12 +60,12 @@ module.exports = io => io.on('connection', socket => {
     });
   });
 
-  socket.on('move', ({from, to}, cb)=> {
+  socket.on('action', ({from, to}, cb)=> {
     if (!userType) return cb(false);
 
     const room = new Room(roomToken);
 
-    room.move(userType, from, to).then(()=> {
+    room.action(userType, from, to).then(()=> {
       cb(room.serializePlayingInfo(userType));
       if (room.won) {
         socket.to(room.token).emit('finished', room.serializePlayingInfo(Room.inverseUserType(userType)));
