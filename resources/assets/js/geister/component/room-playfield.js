@@ -17,17 +17,14 @@ app.component('roomPlayfield', {
         this.roomCtrl.won = won;
       });
 
-      this.roomCtrl.socket.on('finished', ({result, info: {won, field}})=> {
-        console.log('finished!', result, {won, field});
+      this.roomCtrl.socket.on('rival-acted', ({result, info: {won, turn, field}})=> {
+        console.log('rival-acted', result, {won, turn, field});
+        this.result = result;
         this.setField(field);
+        this.turn = turn;
         this.roomCtrl.won = won;
       });
 
-      this.roomCtrl.socket.on('switch-turn', ({result, info: {turn, field}})=> {
-        console.log('switch-turn', result, {turn, field});
-        this.turn = turn;
-        this.setField(field);
-      });
     };
 
     this.setField = (rawField)=> {
@@ -86,12 +83,9 @@ app.component('roomPlayfield', {
       }).then(([{result, info: {won, turn, field}}, cbAsync])=> {
         console.log(result, {won, turn, field});
         this.setField(field);
-        if (won) {
-          console.log('won!!', won);
-          this.roomCtrl.won = won;
-        } else {
-          this.turn = turn;
-        }
+        this.result = result;
+        this.turn = turn;
+        this.roomCtrl.won = won;
       }).catch(()=> {
         if (cell) {
           console.log('failed move', this.selected, cell);
