@@ -345,11 +345,11 @@ module.exports = class Room {
     this.field.forEach(cell => remain[cell.type] += 1);
     let won = null;
     if (remain[CellType.HOST_ESCAPE]) won = UserType.HOST;
-    if (!remain[CellType.HOST_GOOD]) won = UserType.GUEST;
-    if (!remain[CellType.HOST_BAD]) won = UserType.HOST;
-    if (remain[CellType.GUEST_ESCAPE]) won = UserType.GUEST;
-    if (!remain[CellType.GUEST_GOOD]) won = UserType.HOST;
-    if (!remain[CellType.GUEST_BAD]) won = UserType.GUSET;
+    else if (!remain[CellType.HOST_GOOD]) won = UserType.GUEST;
+    else if (!remain[CellType.HOST_BAD]) won = UserType.HOST;
+    else if (remain[CellType.GUEST_ESCAPE]) won = UserType.GUEST;
+    else if (!remain[CellType.GUEST_GOOD]) won = UserType.HOST;
+    else if (!remain[CellType.GUEST_BAD]) won = UserType.GUSET;
     if (won) {
       this.applyWon();
     }
