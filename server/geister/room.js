@@ -233,6 +233,14 @@ module.exports = class Room {
     return pfinally(Promise.all(promises), ()=> redisArg || redis.quit());
   }
 
+  applyWon() {
+    const redis = redisClient();
+    const ret = this.watch([KeyType.SUMMARY], redis, multi =>
+      multi.hset(this.summaryKey, 'won', this.won)
+    );
+    return pfinally(ret, ()=> redis.quit());
+  }
+
   appendExpire(queue) {
     return queue.expire(this.summaryKey, EXPIRE)
       .expire(this.fieldKey, EXPIRE)
@@ -327,17 +335,25 @@ module.exports = class Room {
     return !!this.turn;
   }
 
-  get won() { // TODO summaryの情報とorする
+  get won() {
+    if (this.summary && this.summary.won) {
+      return this.summary.won;
+    }
     if (!this.field) return;
     const remain = {};
     Object.values(CellType).forEach(type => remain[type] = 0);
     this.field.forEach(cell => remain[cell.type] += 1);
-    if (remain[CellType.HOST_ESCAPE]) return UserType.HOST;
-    if (!remain[CellType.HOST_GOOD]) return UserType.GUEST;
-    if (!remain[CellType.HOST_BAD]) return UserType.HOST;
-    if (remain[CellType.GUEST_ESCAPE]) return UserType.GUEST;
-    if (!remain[CellType.GUEST_GOOD]) return UserType.HOST;
-    if (!remain[CellType.GUEST_BAD]) return UserType.GUSET;
+    let won = null;
+    if (remain[CellType.HOST_ESCAPE]) won = UserType.HOST;
+    if (!remain[CellType.HOST_GOOD]) won = UserType.GUEST;
+    if (!remain[CellType.HOST_BAD]) won = UserType.HOST;
+    if (remain[CellType.GUEST_ESCAPE]) won = UserType.GUEST;
+    if (!remain[CellType.GUEST_GOOD]) won = UserType.HOST;
+    if (!remain[CellType.GUEST_BAD]) won = UserType.GUSET;
+    if (won) {
+      this.applyWon();
+    }
+    return won;
   }
 
   get turn() {
