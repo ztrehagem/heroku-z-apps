@@ -16,8 +16,9 @@ app.component('roomPlayfield', {
         this.setField(field);
       });
 
-      this.roomCtrl.socket.on('finished', ({won})=> {
-        console.log('finished!', won);
+      this.roomCtrl.socket.on('finished', ({won, field})=> {
+        console.log('finished!', won, field);
+        this.setField(field);
       });
 
       this.roomCtrl.socket.on('switch-turn', ({turn, field})=> {

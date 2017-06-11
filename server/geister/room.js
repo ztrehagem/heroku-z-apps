@@ -172,8 +172,12 @@ module.exports = class Room {
           .lset(this.fieldKey, fromCell.toIndex(), CellType.NONE)
           .lset(this.fieldKey, destCell.toIndex(), fromCell.type)
           .hset(this.summaryKey, 'turn', inverseUserType(userType))
-          .lrange(this.fieldKey, 0, -1);
-      }).then(([,,, field])=> this.field = field);
+          .lrange(this.fieldKey, 0, -1)
+          .hgetall(this.summaryKey);
+      }).then(([,,, field, summary])=> {
+        this.field = field;
+        this.summary = summary;
+      });
     } else { // escape
 
     }
