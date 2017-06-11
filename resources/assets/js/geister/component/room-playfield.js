@@ -17,14 +17,14 @@ app.component('roomPlayfield', {
         this.roomCtrl.won = won;
       });
 
-      this.roomCtrl.socket.on('finished', ({won, field})=> {
-        console.log('finished!', won, field);
+      this.roomCtrl.socket.on('finished', ({result, info: {won, field}})=> {
+        console.log('finished!', result, {won, field});
         this.setField(field);
         this.roomCtrl.won = won;
       });
 
-      this.roomCtrl.socket.on('switch-turn', ({turn, field})=> {
-        console.log('switch-turn', {turn, field});
+      this.roomCtrl.socket.on('switch-turn', ({result, info: {turn, field}})=> {
+        console.log('switch-turn', result, {turn, field});
         this.turn = turn;
         this.setField(field);
       });
@@ -83,8 +83,8 @@ app.component('roomPlayfield', {
       this.emitting = this.roomCtrl.socket.emitAsync('action', {
         from: this.selected.toPoint(),
         to: cell && cell.toPoint()
-      }).then(([{won, turn, field}, cbAsync])=> {
-        console.log({won, turn, field});
+      }).then(([{result, info: {won, turn, field}}, cbAsync])=> {
+        console.log(result, {won, turn, field});
         this.setField(field);
         if (won) {
           console.log('won!!', won);
@@ -110,10 +110,10 @@ app.component('roomPlayfield', {
         this.y = y;
       }
       isGood() {
-        return this.type == '+';
+        return this.type[0] == '+';
       }
       isBad() {
-        return this.type == '-';
+        return this.type[0] == '-';
       }
       isMine() {
         return this.isGood() || this.isBad();

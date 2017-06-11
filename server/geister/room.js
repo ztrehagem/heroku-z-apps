@@ -166,11 +166,12 @@ module.exports = class Room {
 
   move(userType, from, dest) {
     const redis = redisClient();
+    let [fromCell, destCell] = [null, null];
     const ret = this.watch([KeyType.SUMMARY, KeyType.FIELD], redis, multi => {
       if (this.won) return;
       if (!this.isTurn(userType)) return;
-      const fromCell = this.field[pointToIndex(from)];
-      const destCell = this.field[pointToIndex(dest)];
+      fromCell = this.field[pointToIndex(from)];
+      destCell = this.field[pointToIndex(dest)];
       if (!fromCell.isMovableTo(destCell, userType)) return;
 
       return multi
@@ -182,16 +183,28 @@ module.exports = class Room {
     }).then(([,,, field, summary])=> {
       this.field = field;
       this.summary = summary;
+
+      return {
+        [UserType.HOST]: {
+          from: fromCell.mask(UserType.HOST),
+          dest: destCell
+        },
+        [UserType.GUEST]: {
+          from: fromCell.mask(UserType.GUEST),
+          dest: destCell.inverse()
+        }
+      };
     });
     return pfinally(ret, ()=> redis.quit());
   }
 
   escape(userType, from) {
     const redis = redisClient();
+    let cell = null;
     const ret = this.watch([KeyType.SUMMARY, KeyType.FIELD], redis, multi => {
       if (this.won) return;
       if (!this.isTurn(userType)) return;
-      const cell = this.field[pointToIndex(from)];
+      cell = this.field[pointToIndex(from)];
       if (!cell.isEscapable(userType)) return;
 
       return multi
@@ -199,6 +212,11 @@ module.exports = class Room {
         .lrange(this.fieldKey, 0, -1);
     }).then(([, field])=> {
       this.field = field;
+
+      return {
+        [UserType.HOST]: {from: cell},
+        [UserType.GUEST]: {from: cell.inverse()}
+      };
     });
     return pfinally(ret, ()=> redis.quit());
   }
@@ -269,7 +287,7 @@ module.exports = class Room {
   serializeField(userType) {
     const filteredField = this.field.map(cell => {
       if (cell.type == CellType.NONE) {
-        return null; // no object
+        return cell.type; // no object
       } else if (cell.type[0] == userType[0]) {
         return cell.type[1]; // my object
       } else if (cell.type[1] == '!') {
@@ -446,5 +464,19 @@ class Cell {
       case CellType.HOST_GOOD: return CellType.HOST_ESCAPE;
       case CellType.GUEST_GOOD: return CellType.GUEST_ESCAPE;
     }
+  }
+
+  get point() {
+    return {x: this.x, y: this.y};
+  }
+
+  mask(userType) {
+    const point = userType == UserType.GUEST ? symmetryPoint(this.point) : this.point;
+    const type = inverseUserType(userType)[0] == this.type[0] ? CellType.ENEMY : this.type;
+    return Object.assign({}, this, {type});
+  }
+
+  inverse() {
+    return Object.assign({}, this, symmetryPoint(this.point));
   }
 }

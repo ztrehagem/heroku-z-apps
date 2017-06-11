@@ -7,7 +7,7 @@
     <tbody>
       <tr ng-repeat="row in $ctrl.field track by $index">
         <td ng-repeat="cell in row track by $index" ng-click="$ctrl.onClickCell(cell)">
-          {{cell.type || '&emsp;'}}
+          {{cell.type == '0' ? '&emsp;' : cell.type}}
         </td>
       </tr>
     </tbody>

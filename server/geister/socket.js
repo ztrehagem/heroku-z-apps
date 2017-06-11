@@ -65,13 +65,16 @@ module.exports = io => io.on('connection', socket => {
 
     const room = new Room(roomToken);
 
-    room.action(userType, from, to).then(()=> {
-      cb(room.serializePlayingInfo(userType));
-      if (room.won) {
-        socket.to(room.token).emit('finished', room.serializePlayingInfo(Room.inverseUserType(userType)));
-      } else {
-        socket.to(room.token).emit('switch-turn', room.serializePlayingInfo(Room.inverseUserType(userType)));
-      }
+    room.action(userType, from, to).then(result => {
+      cb({
+        result: result[userType],
+        info: room.serializePlayingInfo(userType)
+      });
+      const inverseUesrType = Room.inverseUserType(userType);
+      socket.to(room.token).emit(room.won ? 'finished' : 'switch-turn', {
+        result: result[inverseUesrType],
+        info: room.serializePlayingInfo(inverseUesrType)
+      });
     }).catch(err => {
       console.log('failed on socket move', err);
       cb(null);
