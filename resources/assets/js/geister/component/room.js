@@ -8,6 +8,7 @@ app.component('room', {
 
       this.userType = null;
       this.players = false;
+      this.won = null;
 
       this.initialized = apiMe.get().then(me => this.socket.emitAsync('join', {
         token: $state.params.token,
@@ -16,7 +17,8 @@ app.component('room', {
         console.log('succeeded joining socket room', userType, room);
         this.userType = userType;
         this.players = room.players;
-        this.status = room.status;
+        this.won = room.won;
+        this.showField = ['playing', 'finished'].some(s => s == room.status);
       }).catch(()=> $state.go('root'));
 
       this.socket.on('joined:guest', (room)=> {
@@ -31,7 +33,7 @@ app.component('room', {
 
       this.socket.on('started', ({firstUser})=> {
         console.log('started!');
-        this.status = 'playing';
+        this.showField = true;
         this.firstUser = firstUser;
       });
     };

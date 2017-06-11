@@ -13,5 +13,11 @@
 
   <hr>
 
-  <room-playfield ng-if="$ctrl.status == 'playing'"></room-playfield>
+  <room-playfield ng-if="$ctrl.showField"></room-playfield>
+
+  <hr>
+
+  <div>
+    won: {{$ctrl.won}}
+  </div>
 </div>

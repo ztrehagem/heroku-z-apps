@@ -251,6 +251,7 @@ module.exports = class Room {
     return {
       token: this.token,
       status: this.status,
+      won: this.won,
       createdAt: this.summary.createdAt,
       players: {
         host: (h => h && {

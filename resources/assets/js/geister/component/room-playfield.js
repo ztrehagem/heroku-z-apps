@@ -11,14 +11,16 @@ app.component('roomPlayfield', {
       this.field = null;
       this.selected = null;
 
-      this.roomCtrl.socket.emit('get-playing-info', null, ({turn, field}) => {
+      this.roomCtrl.socket.emit('get-playing-info', null, ({won, turn, field}) => {
         this.turn = turn;
         this.setField(field);
+        this.roomCtrl.won = won;
       });
 
       this.roomCtrl.socket.on('finished', ({won, field})=> {
         console.log('finished!', won, field);
         this.setField(field);
+        this.roomCtrl.won = won;
       });
 
       this.roomCtrl.socket.on('switch-turn', ({turn, field})=> {
@@ -38,6 +40,8 @@ app.component('roomPlayfield', {
     };
 
     this.onClickCell = (cell)=> {
+      if (this.roomCtrl.won) return;
+
       if (this.selected) {
         if (this.selected.isMovableTo(cell)) {
           doMove(cell);
@@ -52,6 +56,8 @@ app.component('roomPlayfield', {
     };
 
     this.onClickEscape = ()=> {
+      if (this.roomCtrl.won) return;
+
       if (this.selected && this.selected.isEscapable()) {
         doMove();
       }
@@ -82,6 +88,7 @@ app.component('roomPlayfield', {
         this.setField(field);
         if (won) {
           console.log('won!!', won);
+          this.roomCtrl.won = won;
         } else {
           this.turn = turn;
         }
