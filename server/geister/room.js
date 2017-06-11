@@ -233,7 +233,7 @@ module.exports = class Room {
         .then(()=> multiFn(redis.multi()))
         .then(queue => (queue && setExpire) ? this.appendExpire(queue) : queue)
         .then(queue => queue ? queue.execAsync() : Promise.reject())
-        .then(replies => replies || (tryCount < 3 ? proc(tryCount + 1) : Promise.reject('tried 3 times in watch')));
+        .then(replies => replies || (tryCount < 5 ? new Promise(resolve => setTimeout(()=> resolve(proc(tryCount + 1)), Math.floor(Math.random() * 10) * 50)) : Promise.reject('tried 3 times in watch')));
     };
 
     return proc(1);
@@ -253,9 +253,10 @@ module.exports = class Room {
 
   applyWon() {
     const redis = redisClient();
-    const ret = this.watch([KeyType.SUMMARY], redis, multi =>
-      multi.hset(this.summaryKey, 'won', this.won)
-    );
+    const ret = this.watch([KeyType.SUMMARY], redis, multi => {
+      if (this.summary.won) return;
+      return multi.hset(this.summaryKey, 'won', this.won);
+    }).catch(err => console.log('failed on applyWon'));
     return pfinally(ret, ()=> redis.quit());
   }
 
@@ -369,9 +370,9 @@ module.exports = class Room {
     else if (remain[CellType.GUEST_ESCAPE]) won = UserType.GUEST;
     else if (!remain[CellType.GUEST_GOOD]) won = UserType.HOST;
     else if (!remain[CellType.GUEST_BAD]) won = UserType.GUSET;
-    if (won) {
-      this.applyWon();
-    }
+    // if (won) {
+    //   this.applyWon();
+    // }
     return won;
   }
 

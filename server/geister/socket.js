@@ -70,6 +70,9 @@ module.exports = io => io.on('connection', socket => {
         result: result[userType],
         info: room.serializePlayingInfo(userType)
       });
+      if (room.won) {
+        room.applyWon();
+      }
       const inverseUesrType = Room.inverseUserType(userType);
       socket.to(room.token).emit('rival-acted', {
         result: result[inverseUesrType],
