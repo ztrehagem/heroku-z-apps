@@ -20,7 +20,8 @@ const CellType = {
   GUEST_BAD: 'g-',
   GUEST_ESCAPE: 'g!',
   NONE: '0',
-  ENEMY: 'e'
+  ENEMY: 'e',
+  ENEMY_ESCAPE: 'e!'
 };
 const KEY_PREFIX = 'geister';
 const EXPIRE = '' + (60 * 20); // 20 minutes
@@ -262,6 +263,8 @@ module.exports = class Room {
         return null; // no object
       } else if (cell.type[0] == userType[0]) {
         return cell.type[1]; // my object
+      } else if (cell.type[1] == '!') {
+        return CellType.ENEMY_ESCAPE;
       } else {
         return CellType.ENEMY; // enemy object
       }
