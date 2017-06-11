@@ -11,28 +11,31 @@ app.component('roomPlayfield', {
       this.field = null;
       this.selected = null;
 
-      this.roomCtrl.socket.emit('get-playing-info', null, ({won, turn, field}) => {
-        this.turn = turn;
-        this.setField(field);
-        this.roomCtrl.won = won;
+      this.roomCtrl.socket.emit('get-playing-info', null, info => {
+        this.setPlayingInfo(info);
       });
 
-      this.roomCtrl.socket.on('rival-acted', ({result, info: {won, turn, field}})=> {
-        console.log('rival-acted', result, {won, turn, field});
+      this.roomCtrl.socket.on('rival-acted', ({result, info})=> {
+        console.log('rival-acted', result, info);
         this.result = result;
-        this.setField(field);
-        this.turn = turn;
-        this.roomCtrl.won = won;
+        this.setPlayingInfo(info);
       });
 
     };
 
+    this.setPlayingInfo = ({won, turn, field, userStatus})=> {
+      this.roomCtrl.won = won;
+      this.turn = turn;
+      this.setField(field);
+      this.userStatus = userStatus;
+    };
+
     this.setField = (rawField)=> {
-      this.field = rawField.reduce((result, raw, index)=> {
+      this.field = rawField.reduce((field, raw, index)=> {
         const {x, y} = indexToVector(index);
-        if (!result[y]) result[y] = [];
-        result[y][x] = new Cell(raw, x, y);
-        return result;
+        if (!field[y]) field[y] = [];
+        field[y][x] = new Cell(raw, x, y);
+        return field;
       }, []);
     };
 
@@ -80,12 +83,9 @@ app.component('roomPlayfield', {
       this.emitting = this.roomCtrl.socket.emitAsync('action', {
         from: this.selected.toPoint(),
         to: cell && cell.toPoint()
-      }).then(([{result, info: {won, turn, field}}, cbAsync])=> {
-        console.log(result, {won, turn, field});
-        this.setField(field);
+      }).then(([{result, info}, cbAsync])=> {
         this.result = result;
-        this.turn = turn;
-        this.roomCtrl.won = won;
+        this.setPlayingInfo(info);
       }).catch(()=> {
         if (cell) {
           console.log('failed move', this.selected, cell);

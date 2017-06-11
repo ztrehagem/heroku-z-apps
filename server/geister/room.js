@@ -305,8 +305,27 @@ module.exports = class Room {
     return ({
       won: this.won,
       turn: this.turn,
-      field: this.serializeField(userType)
+      field: this.serializeField(userType),
+      userStatus: this.serializeUserStatus(userType)
     });
+  }
+
+  serializeUserStatus(userType) {
+    const remain = this.calcRemain();
+    switch (userType) {
+      case UserType.HOST: return {
+        rivalRemain: {
+          '+': remain[CellType.GUEST_GOOD] + remain[CellType.GUEST_ESCAPE],
+          '-': remain[CellType.GUEST_BAD]
+        }
+      };
+      case UserType.GUEST: return {
+        rivalRemain: {
+          '+': remain[CellType.HOST_GOOD] + remain[CellType.HOST_ESCAPE],
+          '-': remain[CellType.HOST_BAD]
+        }
+      };
+    }
   }
 
   get summary() {
@@ -360,20 +379,20 @@ module.exports = class Room {
       return this.summary.won;
     }
     if (!this.field) return;
+    const remain = this.calcRemain();
+    if (remain[CellType.HOST_ESCAPE]) return UserType.HOST;
+    if (!remain[CellType.HOST_GOOD]) return UserType.GUEST;
+    if (!remain[CellType.HOST_BAD]) return UserType.HOST;
+    if (remain[CellType.GUEST_ESCAPE]) return UserType.GUEST;
+    if (!remain[CellType.GUEST_GOOD]) return UserType.HOST;
+    if (!remain[CellType.GUEST_BAD]) return UserType.GUSET;
+  }
+
+  calcRemain() {
     const remain = {};
     Object.values(CellType).forEach(type => remain[type] = 0);
     this.field.forEach(cell => remain[cell.type] += 1);
-    let won = null;
-    if (remain[CellType.HOST_ESCAPE]) won = UserType.HOST;
-    else if (!remain[CellType.HOST_GOOD]) won = UserType.GUEST;
-    else if (!remain[CellType.HOST_BAD]) won = UserType.HOST;
-    else if (remain[CellType.GUEST_ESCAPE]) won = UserType.GUEST;
-    else if (!remain[CellType.GUEST_GOOD]) won = UserType.HOST;
-    else if (!remain[CellType.GUEST_BAD]) won = UserType.GUSET;
-    // if (won) {
-    //   this.applyWon();
-    // }
-    return won;
+    return remain;
   }
 
   get turn() {
