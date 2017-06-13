@@ -34,13 +34,9 @@ module.exports = io => io.on('connection', socket => {
 
     const room = new Room(roomToken);
 
-    room.ready(userType, formation).then(()=> {
-      socket.to(room.token).emit('ready', {userType});
-      cb(true);
-    }).then(()=> {
-      room.play()
-        .then(firstUser => io.to(room.token).emit('started', {firstUser}))
-        .catch(()=> null);
+    room.ready(userType, formation).then(isStarted => {
+      socket.to(room.token).emit('ready', {userType, isStarted});
+      cb({isStarted});
     }).catch(err => {
       console.log('faield on socket ready', err);
       cb(null);

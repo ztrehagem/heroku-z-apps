@@ -22,9 +22,15 @@ app.component('room', {
       }).catch(()=> $state.go('root'));
 
       this.ready = (formation)=> {
-        return this.socket.emitAsync('ready', formation).then(()=> {
+        return this.socket.emitAsync('ready', formation).then(([{isStarted}, cbAsync])=> {
+          console.log('emit ready then', {isStarted});
           this.players[this.userType].ready = true;
+          if (isStarted) this.start();
         });
+      };
+
+      this.start = ()=> {
+        this.showField = true;
       };
 
       this.socket.on('joined:guest', (room)=> {
@@ -32,15 +38,10 @@ app.component('room', {
         this.players = room.players;
       });
 
-      this.socket.on('ready', ({userType})=> {
-        console.log('ready!', userType);
+      this.socket.on('ready', ({userType, isStarted})=> {
+        console.log('on ready', {userType, isStarted});
         this.players[userType].ready = true;
-      });
-
-      this.socket.on('started', ({firstUser})=> {
-        console.log('started!');
-        this.showField = true;
-        this.firstUser = firstUser;
+        if (isStarted) this.start();
       });
     };
   }

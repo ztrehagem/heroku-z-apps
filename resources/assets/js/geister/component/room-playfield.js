@@ -7,7 +7,7 @@ app.component('roomPlayfield', {
     'ngInject';
 
     this.$onInit = ()=> {
-      this.turn = this.roomCtrl.firstUser;
+      this.turn = null;
       this.field = null;
       this.selected = null;
 

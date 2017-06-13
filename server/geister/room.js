@@ -127,31 +127,30 @@ module.exports = class Room {
     const value = JSON.stringify(formation.map(f => f ? 1 : 0));
     const redis = redisClient();
 
+    let firstUser = null;
+
     const ret = this.watch([KeyType.SUMMARY], redis, multi => {
       if (this.isReady(userType)) return;
-      return multi.hset(this.summaryKey, `players:${userType}:formation`, value);
-    });
-    return pfinally(ret, ()=> redis.quit());
-  }
+      multi = multi.hset(this.summaryKey, `players:${userType}:formation`, value);
 
-  play() {
-    const redis = redisClient();
-    const firstUser = Object.values(UserType)[Math.floor(Math.random() * 2)];
-    const ret = this.watch([KeyType.SUMMARY], redis, multi => {
-      if (!this.isPlayable) return;
-      const host = JSON.parse(this.host.formation).map(i => i ? CellType.HOST_GOOD : CellType.HOST_BAD);
-      const guest = JSON.parse(this.guest.formation).map(i => i ? CellType.GUEST_GOOD : CellType.GUEST_BAD);
-      const field = [
-        0, ...guest.slice(4, 8).reverse(), 0,
-        0, ...guest.slice(0, 4).reverse(), 0,
-        0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0,
-        0, ...host.slice(0, 4), 0,
-        0, ...host.slice(4, 8), 0
-      ];
-      return multi.hset(this.summaryKey, 'turn', firstUser)
-        .rpush(this.fieldKey, field);
-    }).then(()=> firstUser);
+      if (this.isReady(inverseUserType(userType))) {
+        firstUser = Object.values(UserType)[Math.floor(Math.random() * Object.keys(UserType).length)];
+        const host = (this.host.formation ? JSON.parse(this.host.formation) : formation).map(i => i ? CellType.HOST_GOOD : CellType.HOST_BAD);
+        const guest = (this.guest.formation ? JSON.parse(this.guest.formation) : formation).map(i => i ? CellType.GUEST_GOOD : CellType.GUEST_BAD);
+        const n = CellType.NONE;
+        const field = [
+          n, ...guest.slice(4, 8).reverse(), n,
+          n, ...guest.slice(0, 4).reverse(), n,
+          n, n, n, n, n, n,
+          n, n, n, n, n, n,
+          n, ...host.slice(0, 4), n,
+          n, ...host.slice(4, 8), n
+        ];
+        multi = multi.hset(this.summaryKey, 'turn', firstUser)
+          .rpush(this.fieldKey, field);
+      }
+      return multi;
+    }).then(()=> !!firstUser);
     return pfinally(ret, ()=> redis.quit());
   }
 
