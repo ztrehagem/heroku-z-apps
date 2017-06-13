@@ -60,12 +60,12 @@ module.exports = io => io.on('connection', socket => {
     });
   });
 
-  socket.on('action', ({from, to}, cb)=> {
+  socket.on('action', ({from, dest}, cb)=> {
     if (!userType) return cb(false);
 
     const room = new Room(roomToken);
 
-    room.action(userType, from, to).then(result => {
+    room.action(userType, from, dest).then(result => {
       cb({
         result: result[userType],
         info: room.serializePlayingInfo(userType)

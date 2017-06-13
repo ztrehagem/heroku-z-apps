@@ -82,7 +82,7 @@ app.component('roomPlayfield', {
       }
       this.emitting = this.roomCtrl.socket.emitAsync('action', {
         from: this.selected.toPoint(),
-        to: cell && cell.toPoint()
+        dest: cell && cell.toPoint()
       }).then(([{result, info}, cbAsync])=> {
         this.result = result;
         this.setPlayingInfo(info);
