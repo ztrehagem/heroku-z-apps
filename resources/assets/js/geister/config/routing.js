@@ -10,8 +10,7 @@ app.config(function($stateProvider) {
   $stateProvider
   .state('root', {
     url: '/',
-    controller: 'root as ctrl',
-    templateUrl: asset.template('root')
+    component: 'root'
   })
   .state('room', {
     url: '/rooms/:token',

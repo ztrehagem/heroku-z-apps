@@ -1,0 +1,11 @@
+<div class="wrapper" ng-class="{on: $ctrl.isShowForm, visible: $ctrl.initialized.$$state.status == 1}">
+  <div class="view">
+    <span>{{$ctrl.name || '(なまえを設定してください)'}}</span>
+    <button type="button" ng-click="$ctrl.showForm()">変更</button>
+  </div>
+  <form name="form" ng-submit="$ctrl.updateName()" novalidate>
+    <input type="text" name="name" ng-model="$ctrl.nameTemp">
+    <button type="submit" ng-disabled="!$ctrl.nameTemp.length || $ctrl.sending">送信</button>
+    <button type="button" ng-click="$ctrl.cancel()" ng-disabled="$ctrl.sending">キャンセル</button>
+  </form>
+</div>
