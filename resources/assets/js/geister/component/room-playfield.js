@@ -66,20 +66,15 @@ app.component('roomPlayfield', {
     const select = (cell)=> {
       this.selected = cell;
       this.emitting = null;
-      console.log('selected', cell);
     };
 
     const unselect = ()=> {
-      console.log('unselect');
       this.selected = null;
     };
 
     const doMove = (cell)=> {
-      if (cell) {
-        console.log('emit move', this.selected, cell);
-      } else {
-        console.log('emit escape', this.selected);
-      }
+      console.log(`emit ${cell ? 'move' : 'escape'}`);
+
       this.emitting = this.roomCtrl.socket.emitAsync('action', {
         from: this.selected.toPoint(),
         dest: cell && cell.toPoint()
@@ -87,11 +82,7 @@ app.component('roomPlayfield', {
         this.result = result;
         this.setPlayingInfo(info);
       }).catch(()=> {
-        if (cell) {
-          console.log('failed move', this.selected, cell);
-        } else {
-          console.log('failed escape', this.selected);
-        }
+        console.log(`failed ${cell ? 'move' : 'escape'}`);
       }).finally(()=> {
         unselect();
       });

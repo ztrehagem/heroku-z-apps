@@ -12,14 +12,20 @@ app.component('room', {
 
       this.initialized = apiMe.get().then(me => this.socket.emitAsync('join', {
         token: $state.params.token,
-        id: me.id
+        id: me.id // TODO これバラしちゃいかんやつ
       })).then(([{userType, room}, cbAsync]) => {
-        console.log('succeeded joining socket room', userType, room);
+        console.log('joined socket room', userType, room);
         this.userType = userType;
         this.players = room.players;
         this.won = room.won;
         this.showField = ['playing', 'finished'].some(s => s == room.status);
       }).catch(()=> $state.go('root'));
+
+      this.ready = (formation)=> {
+        return this.socket.emitAsync('ready', formation).then(()=> {
+          this.players[this.userType].ready = true;
+        });
+      };
 
       this.socket.on('joined:guest', (room)=> {
         console.log('joined:guest');

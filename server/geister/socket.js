@@ -35,7 +35,7 @@ module.exports = io => io.on('connection', socket => {
     const room = new Room(roomToken);
 
     room.ready(userType, formation).then(()=> {
-      io.to(room.token).emit('ready', {userType});
+      socket.to(room.token).emit('ready', {userType});
       cb(true);
     }).then(()=> {
       room.play()

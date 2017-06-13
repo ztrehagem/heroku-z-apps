@@ -7,18 +7,18 @@ app.component('roomFormation', {
     'ngInject';
 
     this.$onInit = ()=> {
-      this.isDecided = false;
       this.formation = [true,true,true,true,false,false,false,false];
+    };
+
+    this.isValidFormation = ()=> {
+      return this.formation.reduce((count, cell)=> count += cell) == 4;
     };
 
     this.decide = ()=> {
       this.sending = true;
-      this.roomCtrl.socket.emit('ready', this.formation, (data)=> {
-        console.log('ready, received', data);
-        if (!data) {
-          this.sending = false;
-          console.log('invalid formation');
-        }
+      this.roomCtrl.ready(this.formation).catch(()=> {
+        this.sending = false;
+        console.log('invalid formation');
       });
     };
   }
