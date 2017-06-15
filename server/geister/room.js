@@ -109,7 +109,7 @@ module.exports = class Room {
     const redis = redisClient();
 
     const ret = this.watch([KeyType.SUMMARY], redis, multi => {
-      if (this.isHost(guestId)) return; // 自分がホストなのにguestとしてjoinしようとした
+      if (this.isPlayer(guestId)) return multi;
       if (!!this.guest) return; // guestが既にいる
       return multi
         .hset(this.summaryKey, 'players:guest:id', guestId)

@@ -1,0 +1,36 @@
+<div class="buttons">
+  <button type="button" ng-click="$ctrl.reload()" ng-disabled="$ctrl.reloading | qstate:'succeeded' | not">
+    <i class="fa fa-fw fa-refresh"></i>
+    <span>リスト更新</span>
+  </button>
+  <button type="button" ng-click="$ctrl.create()" ng-disabled="$ctrl.creating | qstate:'not-failed' | not">
+    <i class="fa fa-fw fa-plus"></i>
+    <span>部屋をつくる</span>
+  </button>
+</div>
+
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>ホスト名</th>
+        <th>ステータス</th>
+        <th>作成日時</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="room in $ctrl.rooms">
+        <td>
+          <button type="button" ng-click="$ctrl.join(room)" ng-disabled="$ctrl.joining | qstate:'not-failed' | not">
+            <i class="fa fa-fw fa-sign-in"></i>
+            <span>参加</span>
+          </button>
+        </td>
+        <td>{{room.players.host.name}}</td>
+        <td>{{room.status}}</td>
+        <td>{{room.createdAt | date:'short'}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

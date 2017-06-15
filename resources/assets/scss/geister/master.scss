@@ -3,17 +3,56 @@
 $trs: 0.22s;
 $light: rgb(248, 248, 248);
 $lighten: rgb(230, 230, 230);
-$gray: gray;
 
 body {
   margin: 0;
   padding: 0;
 }
 
+button {
+  padding: 0 0.5rem;
+  line-height: 1.5rem;
+  font-size: 0.8rem;
+  border: 1px solid gray;
+  background-color: gray;
+  color: white;
+  cursor: pointer;
+  transition: $trs ease;
+  vertical-align: middle;
+  box-shadow: 0px 1px 2px lightgray;
+
+  &:hover {
+    border-color: darkgray;
+    background-color: darkgray;
+    color: white;
+  }
+}
+
+input {
+  font-size: 1rem;
+  padding: 0.4rem;
+  border: 1px solid gray;
+  background-color: white;
+}
+
+button, input {
+  &:disabled {
+    border-color: darkgray;
+    background-color: white;
+    color: darkgray;
+    box-shadow: none;
+
+    &:hover {
+      color: darkgray;
+      cursor: not-allowed;
+    }
+  }
+}
+
 // -- header
 header {
   background-color: $light;
-  box-shadow: 0 0 5px $gray;
+  box-shadow: 0 0 5px gray;
 
   h1 {
     margin: 0;
@@ -24,20 +63,22 @@ header {
 
 name-editor {
   $height: 3rem;
+  // margin-top: 0.5rem;
+  margin: 0.5rem;
+  border: 1px solid lightgray;
 
   overflow: hidden;
   height: $height;
   display: block;
-  margin-top: 0.5rem;
 
   > .wrapper {
     position: relative;
     top: 0;
     transition: top $trs ease;
-    visibility: hidden;
-    &.visible {
-      visibility: visible;
-    }
+    // visibility: hidden;
+    // &.visible {
+    //   visibility: visible;
+    // }
 
     &.on {
       top: -$height;
@@ -45,30 +86,51 @@ name-editor {
 
     > * {
       display: block;
-      // height: $height;
+      height: $height;
       line-height: $height;
       padding: 0 0.5rem;
     }
+  }
+}
 
-    button {
-      font-size: 0.8rem;
-      border: 1px solid $gray;
-      background-color: white;
-      cursor: pointer;
-      transition: $trs ease;
-      vertical-align: middle;
+rooms-list {
+  display: block;
+  margin: 0.5rem;
+  border: 1px solid lightgray;
 
-      &:hover {
-        background-color: $gray;
-        color: white;
-      }
+  .buttons {
+    // margin: 0.5rem;
+    display: flex;
+    flex-wrap: nowrap;
+
+    > button {
+      flex: 50% 1 1;
+      margin: 0.5rem;
     }
+  }
 
-    input {
-      font-size: 1rem;
-      padding: 0.3rem;
-      border: 1px solid $gray;
-      background-color: white;
+  .table-wrapper {
+    margin: 2.5%;
+    width: 95%;
+    overflow: scroll;
+
+    table {
+      min-width: 100%;
+      * {
+        white-space: nowrap;
+      }
+      td {
+        border-top: 1px solid lightgray;
+        padding: 0.5rem;
+      }
+      tr > td:first-child button {
+        width: 3rem;
+        min-width: 100%;
+      }
+      th {
+        text-align: left;
+        padding: 0.5rem;
+      }
     }
   }
 }

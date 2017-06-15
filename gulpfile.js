@@ -18,6 +18,10 @@ Resource('html', Resource.template('html')
     'angular-ui-router': {
       local: '/js/lib/angular-ui-router.min.js',
       cdn: '//npmcdn.com/angular-ui-router/release/angular-ui-router.min.js'
+    },
+    'font-awesome': {
+      local: '/css/lib/font-awesome.min.css',
+      cdn: '//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css'
     }
   }})
 );

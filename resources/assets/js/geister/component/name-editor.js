@@ -3,29 +3,24 @@ app.component('nameEditor', {
   require: {
     rootCtrl: '^root'
   },
-  controller(apiMe) {
+  controller(me, $filter) {
     'ngInject';
 
-    this.name = null;
-
-    this.$onInit = ()=> {
-      this.initialized = apiMe.get().then(me => this.name = me.name);
-    };
-
     this.updateName = ()=> {
-      apiMe.updateName(this.nameTemp).then(resp => {
-        this.name = resp.name;
+      me.update({name: this.nameTemp}).then(()=> {
         this.isShowForm = false;
       });
     };
 
     this.showForm = ()=> {
-      this.nameTemp = this.name;
+      this.nameTemp = me.name;
       this.isShowForm = true;
     };
 
     this.cancel = ()=> {
       this.isShowForm = false;
     };
+
+    this.isVisible = ()=> $filter('qstate')(me.initialized, 'succeeded');
   }
 });

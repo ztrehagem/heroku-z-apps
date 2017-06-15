@@ -1,11 +1,20 @@
-<div class="wrapper" ng-class="{on: $ctrl.isShowForm, visible: $ctrl.initialized.$$state.status == 1}">
+<div class="wrapper" ng-class="{on: $ctrl.isShowForm}" visibility="$root.me.initialized | qstate:'succeeded'">
   <div class="view">
-    <span>{{$ctrl.name || '(なまえを設定してください)'}}</span>
-    <button type="button" ng-click="$ctrl.showForm()">変更</button>
+    <span>{{$root.me.name || '(なまえを設定してください)'}}</span>
+    <button type="button" ng-click="$ctrl.showForm()">
+      <i class="fa fa-fw fa-pencil"></i>
+      <!-- <span>{{$root.me.name ? '変更' : '設定'}}</span> -->
+    </button>
   </div>
   <form name="form" ng-submit="$ctrl.updateName()" novalidate>
     <input type="text" name="name" ng-model="$ctrl.nameTemp">
-    <button type="submit" ng-disabled="!$ctrl.nameTemp.length || $ctrl.sending">送信</button>
-    <button type="button" ng-click="$ctrl.cancel()" ng-disabled="$ctrl.sending">キャンセル</button>
+    <button type="submit" ng-disabled="!$ctrl.nameTemp.length || $ctrl.sending">
+      <i class="fa fa-fw fa-check"></i>
+      <!-- <span>送信</span> -->
+    </button>
+    <button type="button" ng-click="$ctrl.cancel()" ng-disabled="$ctrl.sending">
+      <i class="fa fa-fw fa-times"></i>
+      <!-- <span>キャンセル</span> -->
+    </button>
   </form>
 </div>
