@@ -3,7 +3,7 @@
     <i class="fa fa-fw fa-refresh"></i>
     <span>リスト更新</span>
   </button>
-  <button type="button" ng-click="$ctrl.create()" ng-disabled="$ctrl.creating | qstate:'not-failed' | not">
+  <button type="button" ng-click="$ctrl.create()" ng-disabled="$ctrl.creating | qstate:'pending'">
     <i class="fa fa-fw fa-plus"></i>
     <span>部屋をつくる</span>
   </button>
@@ -22,7 +22,7 @@
     <tbody>
       <tr ng-repeat="room in $ctrl.rooms">
         <td>
-          <button type="button" ng-click="$ctrl.join(room)" ng-disabled="$ctrl.joining | qstate:'not-failed' | not">
+          <button type="button" ng-click="$ctrl.join(room)" ng-disabled="$ctrl.joining | qstate:'pending'">
             <i class="fa fa-fw fa-sign-in"></i>
             <span>参加</span>
           </button>

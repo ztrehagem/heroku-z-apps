@@ -3,8 +3,8 @@ app.filter('qstate', function() {
 
   return (promise, type)=> {
     switch (type) {
-      case 'succeeded': return promise.$$state.status == 1;
-      case 'not-failed': return angular.isUndefined(promise) || promise.$$state.status == 1;
+      case 'succeeded': return angular.isDefined(promise) && promise.$$state.status === 1;
+      case 'pending': return angular.isDefined(promise) && promise.$$state.status === 0;
     }
   };
 });
