@@ -3,7 +3,7 @@
     <i class="fa fa-fw fa-refresh"></i>
     <span>リスト更新</span>
   </button>
-  <button type="button" ng-click="$ctrl.create()" ng-disabled="$ctrl.creating | qstate:'pending'">
+  <button type="button" ng-click="$ctrl.create()" ng-disabled="$ctrl.disableCreateButton()">
     <i class="fa fa-fw fa-plus"></i>
     <span>部屋をつくる</span>
   </button>
@@ -11,25 +11,17 @@
 
 <div class="table-wrapper">
   <table>
-    <thead>
-      <tr>
-        <th></th>
-        <th>ホスト名</th>
-        <th>ステータス</th>
-        <th>作成日時</th>
-      </tr>
-    </thead>
     <tbody>
       <tr ng-repeat="room in $ctrl.rooms">
         <td>
-          <button type="button" ng-click="$ctrl.join(room)" ng-disabled="$ctrl.joining | qstate:'pending'">
+          <button type="button" ng-click="$ctrl.join(room)" ng-disabled="$ctrl.disableJoinButton(room)">
             <i class="fa fa-fw fa-sign-in"></i>
             <span>参加</span>
           </button>
+          <span class="label" ng-class="room.status">{{room.status | roomStatus}}</span>
+          <span>{{room.players.host.name}}</span>
+          <span class="date">{{room.createdAt.fromNow()}}</span>
         </td>
-        <td>{{room.players.host.name}}</td>
-        <td>{{room.status}}</td>
-        <td>{{room.createdAt | date:'short'}}</td>
       </tr>
     </tbody>
   </table>

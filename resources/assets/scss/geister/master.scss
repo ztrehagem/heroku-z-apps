@@ -1,6 +1,7 @@
 @import "../_import.scss";
 
 $trs: 0.22s;
+$dark: rgb(50, 50, 50);
 $light: rgb(248, 248, 248);
 $lighten: rgb(230, 230, 230);
 
@@ -120,16 +121,40 @@ rooms-list {
         white-space: nowrap;
       }
       td {
-        border-top: 1px solid lightgray;
         padding: 0.5rem;
+      }
+      tbody > tr:not(:first-child) > td {
+        border-top: 1px solid lightgray;
       }
       tr > td:first-child button {
-        width: 3rem;
-        min-width: 100%;
+        min-width: 3rem;
       }
-      th {
-        text-align: left;
-        padding: 0.5rem;
+      .label {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+        border: 1px solid;
+        border-radius: 3px;
+
+        &.accepting {
+          border-color: green;
+          color: green;
+        }
+        &.ready {
+          border-color: darkblue;
+          color: darkblue;
+        }
+        &.playing {
+          border-color: orange;
+          color: orange;
+        }
+        &.finished {
+          border-color: gray;
+          color: gray;
+        }
+      }
+      .date {
+        font-size: 0.7rem;
+        color: gray;
       }
     }
   }
@@ -144,9 +169,114 @@ room {
     > li {
       box-sizing: border-box;
       flex: 50% 1 1;
-      padding: 0.5rem;
+      padding: 0.2rem;
       margin: 0.5rem;
       background-color: lightgray;
+      text-align: center;
+      transition: $trs ease;
+
+      &.ready {
+        background-color: lightgreen;
+
+        &:not(.turn) {
+          opacity: 0.5;
+        }
+      }
+
+      &.won {
+        background-color: darkorange;
+      }
+
+      &.turn {
+        box-shadow: 0 2px 5px gray;
+      }
+    }
+  }
+
+  table.field {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-top: 1px solid gray;
+    border-left: 1px solid gray;
+    border-right: 1px solid lightgray;
+    border-bottom: 1px solid lightgray;
+    margin: 2rem auto;
+
+    td {
+      height: 2.5rem;
+      width: 2.5rem;
+      line-height: 2.5rem;
+      font-size: 1.6rem;
+      text-align: center;
+
+      border-top: 1px solid lightgray;
+      border-left: 1px solid lightgray;
+      border-right: 1px solid gray;
+      border-bottom: 1px solid gray;
+
+      cursor: pointer;
+
+      &.from {
+        background-color: lightgreen;
+      }
+      &.dest {
+        background-color: orange;
+      }
+      &.selected {
+        background-color: lightblue;
+      }
+    }
+  }
+
+  room-formation {
+    display: block;
+    box-sizing: border-box;
+    padding: 0.5rem;
+    width: 100%;
+
+    button {
+      width: 4rem;
+      max-width: 100%;
+      display: table;
+      margin: 0 auto;
+    }
+  }
+
+  room-playfield {
+    > div {
+      position: relative;
+    }
+
+    button.escape {
+      display: table;
+      margin: 2rem auto;
+    }
+
+    .result-popup {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+      width: 100%;
+      text-align: center;
+      border-top: 3px solid rgba(255,255,255,0.5);
+      border-bottom: 3px solid rgba(255,255,255,0.5);
+      background-color: lightblue;
+      &.positive {
+        background-color: orange;
+      }
+    }
+
+    .remains {
+      display: table;
+      margin: 2rem auto;
+      dl {
+        margin: 0;
+        dt, dd {
+          margin: 0;
+          display: inline-block;
+        }
+      }
     }
   }
 }

@@ -11,6 +11,10 @@ const JS_APP_NAMES = ['root', 'shift', 'geister'];
 
 Resource('html', Resource.template('html')
   .option({replace: {
+    moment: {
+      local: '/js/lib/moment-with-locales.min.js',
+      cdn: '//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment-with-locales.min.js'
+    },
     angular: {
       local: '/js/lib/angular.min.js',
       cdn: '//ajax.googleapis.com/ajax/libs/angularjs/1.6.3/angular.min.js'

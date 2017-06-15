@@ -492,7 +492,7 @@ class Cell {
   mask(userType) {
     const point = userType == UserType.GUEST ? symmetryPoint(this.point) : this.point;
     const type = inverseUserType(userType)[0] == this.type[0] ? CellType.ENEMY : this.type;
-    return Object.assign({}, this, {type});
+    return Object.assign({}, this, point, {type});
   }
 
   inverse() {

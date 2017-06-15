@@ -1,6 +1,6 @@
 app.component('roomsList', {
   templateUrl: asset.template('rooms-list'),
-  controller($state, apiRooms) {
+  controller($state, apiRooms, moment, me, $filter) {
     'ngInject';
 
     this.$onInit = ()=> {
@@ -16,9 +16,8 @@ app.component('roomsList', {
 
     this.reload = ()=> {
       this.reloading = apiRooms.index().then(rooms => {
-        rooms.forEach(room => {
-          room.createdAt = Date.parse(room.createdAt);
-        });
+        rooms.forEach(room => room.createdAt = moment.parseFromApi(room.createdAt));
+        rooms.sort((a, b)=> b.createdAt.toDate() - a.createdAt.toDate());
         this.rooms = rooms;
       });
     };
@@ -31,6 +30,14 @@ app.component('roomsList', {
       }).catch(resp => {
         console.log('join failed', resp);
       });
+    };
+
+    this.disableCreateButton = ()=> {
+      return !me.name || $filter('qstate')(this.creating, 'pending');
+    };
+
+    this.disableJoinButton = (room)=> {
+      return !me.name || room.status != 'accepting' || $filter('qstate')(this.joining, 'pending');
     };
   }
 });
