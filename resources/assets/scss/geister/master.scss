@@ -134,3 +134,19 @@ rooms-list {
     }
   }
 }
+
+room {
+  ul.players {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    > li {
+      box-sizing: border-box;
+      flex: 50% 1 1;
+      padding: 0.5rem;
+      margin: 0.5rem;
+      background-color: lightgray;
+    }
+  }
+}

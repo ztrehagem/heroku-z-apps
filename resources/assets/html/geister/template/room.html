@@ -1,4 +1,11 @@
-<div ng-if="$ctrl.initialized.$$state.status == 1">
+<div ng-if="$ctrl.initialized | qstate:'succeeded'">
+
+  <ul class="players">
+    <li ng-repeat="userType in ['host','guest']" ng-init="player = $ctrl.players[userType]">
+      {{player}}
+    </li>
+  </ul>
+
   <div>
     <span>you are {{$ctrl.userType}}</span>
   </div>
