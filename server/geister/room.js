@@ -384,7 +384,7 @@ module.exports = class Room {
     if (!remain[CellType.HOST_BAD]) return UserType.HOST;
     if (remain[CellType.GUEST_ESCAPE]) return UserType.GUEST;
     if (!remain[CellType.GUEST_GOOD]) return UserType.HOST;
-    if (!remain[CellType.GUEST_BAD]) return UserType.GUSET;
+    if (!remain[CellType.GUEST_BAD]) return UserType.GUEST;
   }
 
   calcRemain() {
