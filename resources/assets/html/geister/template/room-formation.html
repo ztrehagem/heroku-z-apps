@@ -1,12 +1,19 @@
-<table border="1">
+<p>おばけの初期配置を決めてください。良いおばけと悪いおばけが4つずつになるように配置します。</p>
+<ul>
+  <li><i class="fa fa-fw fa-circle"></i> : 良いおばけ</li>
+  <li><i class="fa fa-fw fa-circle-o"></i> : 悪いおばけ</li>
+</ul>
+
+<table class="field">
   <tbody>
     <tr ng-repeat="i in [0, 4]">
-      <td ng-repeat="j in [0, 1, 2, 3]">
-        <button type="button" ng-click="$ctrl.formation[j + i] = !$ctrl.formation[j + i]">
-          {{$ctrl.formation[j + i] ? '+' : '-'}}
-        </button>
+      <td ng-repeat="j in [0, 1, 2, 3]" ng-click="$ctrl.formation[j + i] = !$ctrl.formation[j + i]">
+        <i class="fa fa-fw" ng-class="$ctrl.formation[j+i] ? 'fa-plus-circle' : 'fa-minus-circle'"></i>
       </td>
     </tr>
   </tbody>
 </table>
-<button type="button" ng-click="$ctrl.decide()" ng-disabled="$ctrl.sending || !$ctrl.isValidFormation()">ok</button>
+<button type="button" ng-click="$ctrl.decide()" ng-disabled="$ctrl.sending || !$ctrl.isValidFormation()">
+  <i class="fa fa-fw fa-check"></i>
+  <span>決定</span>
+</button>

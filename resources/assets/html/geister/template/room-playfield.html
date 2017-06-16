@@ -1,34 +1,40 @@
-<div>
-  turn: {{$ctrl.turn}}
-</div>
-
 <div ng-if="$ctrl.field">
-  <table border="1">
+  <button class="escape" type="button" ng-click="$ctrl.onClickEscape()" ng-disabled="!$ctrl.selected.isEscapable()">脱出</button>
+
+  <table class="field">
     <tbody>
       <tr ng-repeat="row in $ctrl.field track by $index">
-        <td ng-repeat="cell in row track by $index" ng-click="$ctrl.onClickCell(cell)">
-          {{cell.type == '0' ? '&emsp;' : cell.type}}
+        <td ng-repeat="cell in row track by $index" ng-click="$ctrl.onClickCell(cell)" ng-class="{selected: cell == $ctrl.selected, from: cell.isAt($ctrl.result.from), dest: cell.isAt($ctrl.result.dest)}">
+          <i ng-if="!crll.isNone()" class="fa fa-fw" ng-class="cell.faClass()"></i>
         </td>
       </tr>
     </tbody>
   </table>
 
-  <div ng-if="$ctrl.selected.isEscapable()">
-    <button type="button" ng-click="$ctrl.onClickEscape()">escape</button>
+  <span ng-init="$ctrl.hidePopup = false"></span>
+
+  <div ng-if="!$ctrl.hidePopup && $ctrl.roomCtrl.won" class="result-popup" ng-init="positive = $ctrl.roomCtrl.won == $ctrl.roomCtrl.userType" ng-class="{positive: positive}" ng-click="$ctrl.hidePopup = true">
+    <span>あなたの{{positive ? '勝ち' : '負け'}}</span>
+  </div>
+
+  <div class="remains">
+    <strong>相手の残りおばけ</strong>
+    <ul>
+      <li>
+        <span>良いおばけ({{$ctrl.userStatus.rivalRemain['+']}})</span>
+        <i class="fa fa-fw fa-plus-circle" ng-repeat="index in $ctrl.times($ctrl.userStatus.rivalRemain['+'])"></i>
+      </li>
+      <li>
+        <span>悪いおばけ({{$ctrl.userStatus.rivalRemain['-']}})</span>
+        <i class="fa fa-fw fa-minus-circle" ng-repeat="index in $ctrl.times($ctrl.userStatus.rivalRemain['-'])"></i>
+      </li>
+    </ul>
   </div>
 </div>
 
-<div>
-  select: {{$ctrl.selected}}
-</div>
 
-<div>
-  result: {{$ctrl.result}}
-</div>
 
-<div>
-  userStatus: {{$ctrl.userStatus}}
-</div>
+<hr>
 
 <div>
   network: {{$ctrl.emitting.$$state.status}}

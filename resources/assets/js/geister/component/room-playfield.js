@@ -7,7 +7,7 @@ app.component('roomPlayfield', {
     'ngInject';
 
     this.$onInit = ()=> {
-      this.turn = null;
+      this.roomCtrl.turn = null;
       this.field = null;
       this.selected = null;
 
@@ -20,12 +20,13 @@ app.component('roomPlayfield', {
         this.result = result;
         this.setPlayingInfo(info);
       });
-
     };
+
+    this.times = (num)=> num ? [...this.times(num - 1), num] : [];
 
     this.setPlayingInfo = ({won, turn, field, userStatus})=> {
       this.roomCtrl.won = won;
-      this.turn = turn;
+      this.roomCtrl.turn = turn;
       this.setField(field);
       this.userStatus = userStatus;
     };
@@ -45,6 +46,8 @@ app.component('roomPlayfield', {
       if (this.selected) {
         if (this.selected.isMovableTo(cell)) {
           doMove(cell);
+        } else if (cell.isMine()) {
+          select(cell);
         } else {
           unselect();
         }
@@ -117,6 +120,21 @@ app.component('roomPlayfield', {
       }
       toPoint() {
         return {x: this.x, y: this.y};
+      }
+      isAt(target) {
+        return target && this.x == target.x && this.y == target.y;
+      }
+      isNone() {
+        return this.type == '0';
+      }
+      faClass() {
+        switch (this.type) {
+          case '+': return 'fa-plus-circle';
+          case '-': return 'fa-minus-circle';
+          case '!': return 'fa-check-circle';
+          case 'e': return 'fa-circle-o';
+          case 'e!': return 'fa-check-circle-o';
+        }
       }
     }
 

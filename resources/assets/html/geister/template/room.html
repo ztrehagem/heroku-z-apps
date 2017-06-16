@@ -1,23 +1,20 @@
-<div ng-if="$ctrl.initialized.$$state.status == 1">
-  <div>
-    <span>you are {{$ctrl.userType}}</span>
-  </div>
+<div ng-if="$ctrl.initialized | qstate:'succeeded'">
 
-  <div>
-    {{$ctrl.players | json}}
-  </div>
-
-  <hr>
+  <ul class="players">
+    <li ng-repeat="(type, player) in $ctrl.players" ng-class="{ready: player.ready, won: $ctrl.won == type, turn: $ctrl.turn == type}">
+      <span>[{{type == $ctrl.userType ? 'YOU' : 'RIVAL'}}]</span>
+      <span>{{player.name}}</span>
+      <i ng-if="!$ctrl.won && $ctrl.turn == type" class="fa fa-fw fa-spin fa-circle-o-notch"></i>
+      <i ng-if="$ctrl.won == type" class="fa fa-fw fa-trophy"></i>
+    </li>
+  </ul>
 
   <room-formation ng-if="!$ctrl.players[$ctrl.userType].ready"></room-formation>
 
-  <hr>
+  <div ng-if="$ctrl.players[$ctrl.userType].ready && !$ctrl.showField">
+    <i class="fa fa-fw fa-spin fa-circle-o-notch"></i>
+    <span>対戦相手を待っています．．．</span>
+  </div>
 
   <room-playfield ng-if="$ctrl.showField"></room-playfield>
-
-  <hr>
-
-  <div>
-    won: {{$ctrl.won}}
-  </div>
 </div>

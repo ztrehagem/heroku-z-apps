@@ -11,6 +11,10 @@ const JS_APP_NAMES = ['root', 'shift', 'geister'];
 
 Resource('html', Resource.template('html')
   .option({replace: {
+    moment: {
+      local: '/js/lib/moment-with-locales.min.js',
+      cdn: '//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment-with-locales.min.js'
+    },
     angular: {
       local: '/js/lib/angular.min.js',
       cdn: '//ajax.googleapis.com/ajax/libs/angularjs/1.6.3/angular.min.js'
@@ -18,6 +22,10 @@ Resource('html', Resource.template('html')
     'angular-ui-router': {
       local: '/js/lib/angular-ui-router.min.js',
       cdn: '//npmcdn.com/angular-ui-router/release/angular-ui-router.min.js'
+    },
+    'font-awesome': {
+      local: '/css/lib/font-awesome.min.css',
+      cdn: '//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css'
     }
   }})
 );

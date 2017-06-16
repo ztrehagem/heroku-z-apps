@@ -109,7 +109,7 @@ module.exports = class Room {
     const redis = redisClient();
 
     const ret = this.watch([KeyType.SUMMARY], redis, multi => {
-      if (this.isHost(guestId)) return; // 自分がホストなのにguestとしてjoinしようとした
+      if (this.isPlayer(guestId)) return multi;
       if (!!this.guest) return; // guestが既にいる
       return multi
         .hset(this.summaryKey, 'players:guest:id', guestId)
@@ -492,7 +492,7 @@ class Cell {
   mask(userType) {
     const point = userType == UserType.GUEST ? symmetryPoint(this.point) : this.point;
     const type = inverseUserType(userType)[0] == this.type[0] ? CellType.ENEMY : this.type;
-    return Object.assign({}, this, {type});
+    return Object.assign({}, this, point, {type});
   }
 
   inverse() {

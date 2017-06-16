@@ -35,7 +35,7 @@ app.component('room', {
 
       this.socket.on('joined:guest', (room)=> {
         console.log('joined:guest');
-        this.players = room.players;
+        Object.assign(this.players, room.players);
       });
 
       this.socket.on('ready', ({userType, isStarted})=> {
