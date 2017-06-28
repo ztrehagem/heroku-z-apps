@@ -37,5 +37,8 @@ app.factory('Socket', function($rootScope, $q) {
     emitAsync(name, arg) {
       return defer(deferred => this.socket.emit(name, arg, cbFn(deferred)));
     }
+    close() {
+      this.socket.disconnect();
+    }
   };
 });

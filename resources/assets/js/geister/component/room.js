@@ -21,18 +21,6 @@ app.component('room', {
         this.showField = ['playing', 'finished'].some(s => s == room.status);
       }).catch(()=> $state.go('root'));
 
-      this.ready = (formation)=> {
-        return this.socket.emitAsync('ready', formation).then(([{isStarted}, cbAsync])=> {
-          console.log('emit ready then', {isStarted});
-          this.players[this.userType].ready = true;
-          if (isStarted) this.start();
-        });
-      };
-
-      this.start = ()=> {
-        this.showField = true;
-      };
-
       this.socket.on('joined:guest', (room)=> {
         console.log('joined:guest');
         Object.assign(this.players, room.players);
@@ -43,6 +31,22 @@ app.component('room', {
         this.players[userType].ready = true;
         if (isStarted) this.start();
       });
+    };
+
+    this.$onDestroy = ()=> {
+      this.socket.close();
+    };
+
+    this.ready = (formation)=> {
+      return this.socket.emitAsync('ready', formation).then(([{isStarted}, cbAsync])=> {
+        console.log('emit ready then', {isStarted});
+        this.players[this.userType].ready = true;
+        if (isStarted) this.start();
+      });
+    };
+
+    this.start = ()=> {
+      this.showField = true;
     };
   }
 });

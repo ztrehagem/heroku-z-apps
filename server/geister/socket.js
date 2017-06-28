@@ -79,4 +79,8 @@ module.exports = io => io.on('connection', socket => {
       cb(null);
     });
   });
+
+  socket.on('disconnect', ()=> {
+    console.log('disconnect', userId);
+  });
 });
