@@ -3,9 +3,11 @@
     players.host.id
     players.host.name
     players.host.formation Array
+    players.host.connection
     players.guest.id
     players.guest.name
     players.guest.formation Array
+    players.guest.connection
     turn: 'host' / 'guest'
     finish: 0/1
 

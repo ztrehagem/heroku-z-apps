@@ -41,7 +41,8 @@ const createInitialSummary = (hostId, hostName)=> ({
   players: {
     host: {
       id: hostId,
-      name: hostName
+      name: hostName,
+      connection: 1
     }
   }
 });
@@ -113,7 +114,8 @@ module.exports = class Room {
       if (!!this.guest) return; // guestが既にいる
       return multi
         .hset(this.summaryKey, 'players:guest:id', guestId)
-        .hset(this.summaryKey, 'players:guest:name', guestName);
+        .hset(this.summaryKey, 'players:guest:name', guestName)
+        .hset(this.summaryKey, 'players:guset:connection', 1);
     });
     return pfinally(ret, ()=> redis.quit());
   }
@@ -216,6 +218,22 @@ module.exports = class Room {
         [UserType.HOST]: {from: cell},
         [UserType.GUEST]: {from: cell.inverse()}
       };
+    });
+    return pfinally(ret, ()=> redis.quit());
+  }
+
+  leave(userType) {
+    const redis = redisClient();
+    let del = false;
+    let ret = this.watch([KeyType.SUMMARY], redis, multi => {
+      if (!this.isConnected(userType)) return;
+      if (this.isConnected(inverseUserType(userType))) {
+        return multi.hset(this.summaryKey, `players:${userType}:connection`, 0);
+      }
+      del = true;
+      return multi;
+    }).then(()=> {
+      return del && redis.delAsync(this.summaryKey, this.fieldKey, this.movesKey);
     });
     return pfinally(ret, ()=> redis.quit());
   }
@@ -420,6 +438,14 @@ module.exports = class Room {
 
   isPlayer(id) {
     return this.isHost(id) || this.isGuest(id);
+  }
+
+  isConnected(userType) {
+    return this[userType] && this[userType].connection == 1;
+  }
+
+  get hasNoConnection() {
+    return Object.values(UserType).every(userType => !this.isConnected(userType));
   }
 
   isReady(userType) {

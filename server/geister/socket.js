@@ -82,5 +82,15 @@ module.exports = io => io.on('connection', socket => {
 
   socket.on('disconnect', ()=> {
     console.log('disconnect', userId);
+
+    if (roomToken) {
+      const room = new Room(roomToken);
+
+      room.leave(userType).then(()=> {
+        roomToken = null;
+      }).catch(()=> {
+        console.log('failed on room.leave');
+      });
+    }
   });
 });
