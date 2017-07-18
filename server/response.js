@@ -1,15 +1,27 @@
+const colors = require('utils/colors');
+const log = require('utils/log');
+const Cookie = require('cookie');
+const Request = require('./request');
+
+const Header = {
+  CONTENT_TYPE: 'Content-Type',
+  LOCATION: 'Location',
+  SET_COOKIE: 'Set-Cookie',
+};
+
 module.exports = class Response {
 
   constructor(resp) {
     this.raw = resp;
   }
 
+  static get Header() {
+    return Header;
+  }
+
   respondMessageJson(status, obj) {
     status = status || HttpStatus.OK;
-    var body = JSON.stringify(obj || {
-      status: status,
-      statusMessage: HttpStatus[status]
-    });
+    const body = obj && JSON.stringify(obj);
     this.respond(body, status, ContentType.JSON);
   }
 
@@ -26,25 +38,32 @@ module.exports = class Response {
   respond(body, status, contentType) {
     contentType = contentType || ContentType.TEXT;
     status = status || HttpStatus.OK;
-    body = body || HttpStatus[status];
-    console.log('--- respond ---', status, contentType);
-    console.log(body);
-    console.log('---------------');
+    console.log(`${colors.cyan}${log.RES} ${status} ${contentType}${colors.reset}`);
+    if (body) console.log(`${colors.cyan}${body}${colors.reset}`);
     this.setContentType(contentType);
+    this.setSessionToken();
     this.setStatus(status);
     this.raw.end(body);
   }
 
   setContentType(contentType) {
-    this.setHeader('Content-Type', contentType);
+    this.setHeader(Header.CONTENT_TYPE, contentType);
+  }
+
+  setSessionToken() {
+    const cookieToken = this._req.cookie[Request.Cookie.TOKEN];
+    const sessionToken = this._req.session.token;
+    if (!cookieToken || !cookieToken.length || cookieToken != sessionToken) {
+      this.setHeader(Header.SET_COOKIE, Cookie.serialize(Request.Cookie.TOKEN, sessionToken));
+    }
   }
 
   setStatus(status) {
     this.raw.writeHead(status);
   }
 
-  write() {
-    this.raw.write.apply(this.raw, arguments);
+  write(...args) {
+    this.raw.write(...args);
   }
 
   setHeader(key, value) {

@@ -1,3 +1,8 @@
 node_modules/
 .jshintrc
-public/
+public/**/*.html
+public/css/*
+!public/css/lib/
+public/js/*
+!public/js/lib/
+dump.rdb

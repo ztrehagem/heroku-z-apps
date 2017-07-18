@@ -1,21 +1,17 @@
 require('app-module-path').addPath(__dirname);
-require('globals');
 
-var HTTP = require('http');
+const server = require('server');
+const models = require('models');
+const bluebird = require('bluebird');
+const redis = require('redis');
 
-initEntities().then(startServer).catch((e)=> {
+bluebird.promisifyAll(redis.RedisClient.prototype);
+bluebird.promisifyAll(redis.Multi.prototype);
+
+models.sequelize.sync().then(()=> {
+  server().listen(process.env.PORT);
+  console.log('server has started');
+}).catch((e)=> {
   console.error('failed starting server');
   console.error(e);
 });
-
-// --
-
-function initEntities() {
-  return require('models').sequelize.sync();
-}
-
-function startServer() {
-  var server = require('server');
-  HTTP.createServer(server).listen(process.env.PORT);
-  console.log('server has started');
-}
