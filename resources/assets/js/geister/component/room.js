@@ -21,9 +21,14 @@ app.component('room', {
         this.showField = ['playing', 'finished'].some(s => s == room.status);
       }).catch(()=> $state.go('root'));
 
-      this.socket.on('joined:guest', (room)=> {
-        console.log('joined:guest');
-        Object.assign(this.players, room.players);
+      this.socket.on('joined', (room)=> {
+        console.log('joined', room.players);
+        this.players = room.players;
+      });
+
+      this.socket.on('leaved', (userType)=> {
+        console.log('leaved', userType);
+        this.players[userType].connection = false;
       });
 
       this.socket.on('ready', ({userType, isStarted})=> {

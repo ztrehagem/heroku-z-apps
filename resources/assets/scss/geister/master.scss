@@ -191,6 +191,10 @@ room {
       &.turn {
         box-shadow: 0 2px 5px gray;
       }
+
+      &.disconnect {
+        color: red;
+      }
     }
   }
 

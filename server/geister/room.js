@@ -106,17 +106,32 @@ module.exports = class Room {
     return pfinally(ret, ()=> redis.quit());
   }
 
-  join(guestId, guestName) {
+  join(userId, uesrName) {
     const redis = redisClient();
 
     const ret = this.watch([KeyType.SUMMARY], redis, multi => {
-      if (this.isPlayer(guestId)) return multi;
+      if (this.isPlayer(userId)) return multi;
       if (!!this.guest) return; // guestが既にいる
       return multi
-        .hset(this.summaryKey, 'players:guest:id', guestId)
-        .hset(this.summaryKey, 'players:guest:name', guestName)
-        .hset(this.summaryKey, 'players:guset:connection', 1);
+        .hset(this.summaryKey, 'players:guest:id', userId)
+        .hset(this.summaryKey, 'players:guest:name', uesrName)
+        .hset(this.summaryKey, 'players:guest:connection', 1);
     });
+    return pfinally(ret, ()=> redis.quit());
+  }
+
+  connect(userId) {
+    const redis = redisClient();
+
+    let userType = null;
+    const ret = this.watch([KeyType.SUMMARY], redis, multi => {
+      userType = this.userType(userId);
+      if (!userType) return;
+      return multi.hset(this.summaryKey, `players:${userType}:connection`, 1);
+    })
+      .then(()=> redis.hgetallAsync(this.summaryKey))
+      .then((summary)=> this.summary = summary)
+      .then(()=> userType);
     return pfinally(ret, ()=> redis.quit());
   }
 
@@ -292,10 +307,12 @@ module.exports = class Room {
       players: {
         host: (h => h && {
           name: h.name,
+          connection: h.connection == 1,
           ready: !!h.formation
         })(this.host),
         guest: (g => g && {
           name: g.name,
+          connection: g.connection == 1,
           ready: !!g.formation
         })(this.guest)
       }
@@ -438,6 +455,11 @@ module.exports = class Room {
 
   isPlayer(id) {
     return this.isHost(id) || this.isGuest(id);
+  }
+
+  userType(id) {
+    if (this.isHost(id)) return UserType.HOST;
+    if (this.isGuest(id)) return UserType.GUEST;
   }
 
   isConnected(userType) {

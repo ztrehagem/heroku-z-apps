@@ -9,22 +9,15 @@ module.exports = io => io.on('connection', socket => {
 
     const room = new Room(token);
 
-    room.fetch([Room.KeyType.SUMMARY]).then(()=> {
-      if (!room.isPlayer(userId)) return cb(false);
-
+    room.connect(userId).then((_userType)=> {
       socket.join(room.token, ()=> {
-        roomToken = token;
-
-        if (room.isHost(userId)) {
-          userType = Room.UserType.HOST;
-        } else if (room.isGuest(userId)) {
-          userType = Room.UserType.GUEST;
-          socket.to(room.token).emit('joined:guest', room.serializeSummary());
-        }
+        roomToken = room.token;
+        userType = _userType;
+        socket.to(room.token).emit('joined', room.serializeSummary());
         cb({userType, room: room.serializeSummary()});
       });
     }).catch(err => {
-      console.log('faield on socket join', err);
+      console.log('failed on socket join', err);
       cb(null);
     });
   });
@@ -85,9 +78,11 @@ module.exports = io => io.on('connection', socket => {
 
     if (roomToken) {
       const room = new Room(roomToken);
-
+      console.log('leaving', userType, roomToken);
       room.leave(userType).then(()=> {
+        socket.to(room.token).emit('leaved', userType);
         roomToken = null;
+        console.log('leaved');
       }).catch(()=> {
         console.log('failed on room.leave');
       });

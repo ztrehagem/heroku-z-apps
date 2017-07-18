@@ -1,7 +1,7 @@
 <div ng-if="$ctrl.initialized | qstate:'succeeded'">
 
   <ul class="players">
-    <li ng-repeat="(type, player) in $ctrl.players" ng-class="{ready: player.ready, won: $ctrl.won == type, turn: $ctrl.turn == type}">
+    <li ng-repeat="(type, player) in $ctrl.players" ng-class="{ready: player.ready, won: $ctrl.won == type, turn: $ctrl.turn == type, disconnect: !player.connection}">
       <span>[{{type == $ctrl.userType ? 'YOU' : 'RIVAL'}}]</span>
       <span>{{player.name}}</span>
       <i ng-if="!$ctrl.won && $ctrl.turn == type" class="fa fa-fw fa-spin fa-circle-o-notch"></i>
