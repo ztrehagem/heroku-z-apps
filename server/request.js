@@ -1,28 +1,65 @@
+const colors = require('utils/colors');
+const Session = require('./session');
+const cookie = require('cookie');
+
+const Cookie = {
+  TOKEN: 'st',
+};
+
 module.exports = class Request {
 
   constructor(req) {
     this.raw = req;
+    this.cookie = cookie.parse(this.raw.headers.cookie || '');
+  }
+
+  static get Cookie() {
+    return Cookie;
+  }
+
+  assosiate(resp) {
+    this._resp = resp;
+    resp._req = this;
   }
 
   sync() {
-    var self = this;
+    return Promise.all([
+      this._syncRequestBody(),
+      this._syncSession()
+    ]).then(()=> this);
+  }
+
+  _syncRequestBody() {
     return new Promise((resolve, reject)=> {
       var strbuf = [];
-      self.raw.on('data', (chunk)=> {
+      this.raw.on('data', (chunk)=> {
         strbuf.push(chunk);
       });
-      self.raw.on('end', ()=> {
-        self.body = strbuf.join('');
-        resolve(self);
+      this.raw.on('end', ()=> {
+        this.body = strbuf.join('');
+        resolve();
       });
-      self.raw.on('error', ()=> {
-        console.log('reject', strbuf);
+      this.raw.on('error', ()=> {
+        console.warn(colors.bgRed + '# sync request body error', strbuf, colors.reset);
         reject();
       });
     });
   }
 
-  getBodyAsJson() {
-    return JSON.parse(this.body);
+  _syncSession() {
+    return (()=> {
+      const token = this.cookie && this.cookie[Cookie.TOKEN];
+      if (token) {
+        return Session.get(token).then(session => session || Session.create());
+      } else {
+        return Session.create();
+      }
+    })()
+    .then(session => this.session = session)
+    .catch(err => console.warn(colors.bgRed + '# missing session' + colors.reset));
+  }
+
+  get bodyJson() {
+    return this._bodyJson || (this._bodyJson = JSON.parse(this.body));
   }
 };

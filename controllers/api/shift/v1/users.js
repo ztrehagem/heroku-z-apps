@@ -20,7 +20,7 @@ ctrl.create = (req, resp, uriParams)=> {
   var params;
 
   try {
-    params = req.getBodyAsJson();
+    params = req.bodyJson;
     if(!REQUIRED_PARAMS.every((key)=> {
       return key in params;
     })) throw new Error('request has not enough params.');
@@ -43,7 +43,7 @@ ctrl.update = (req, resp, uriParams)=> {
   console.log('user update', uriParams);
 
   try {
-    params = req.getBodyAsJson();
+    params = req.bodyJson;
   } catch(e) {
     console.warn('' + e);
     return resp.respondMessageJson(HttpStatus.BAD_REQUEST);
