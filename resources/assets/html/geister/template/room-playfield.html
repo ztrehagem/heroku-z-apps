@@ -11,6 +11,8 @@
     </tbody>
   </table>
 
+  <result-panel result="$ctrl.result"></result-panel>
+
   <span ng-init="$ctrl.hidePopup = false"></span>
 
   <div ng-if="!$ctrl.hidePopup && $ctrl.roomCtrl.won" class="result-popup" ng-init="positive = $ctrl.roomCtrl.won == $ctrl.roomCtrl.userType" ng-class="{positive: positive}" ng-click="$ctrl.hidePopup = true">
