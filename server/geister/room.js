@@ -327,6 +327,8 @@ module.exports = class Room {
         return cell.type[1]; // my object
       } else if (cell.type[1] == '!') {
         return CellType.ENEMY_ESCAPE;
+      } else if (this.won) {
+        return `${CellType.ENEMY}${cell.type[1]}`; // enemy object if finished
       } else {
         return CellType.ENEMY; // enemy object
       }

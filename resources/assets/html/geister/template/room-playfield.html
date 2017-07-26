@@ -4,7 +4,7 @@
   <table class="field">
     <tbody>
       <tr ng-repeat="row in $ctrl.field track by $index">
-        <td ng-repeat="cell in row track by $index" ng-click="$ctrl.onClickCell(cell)" ng-class="{selected: cell == $ctrl.selected, from: cell.isAt($ctrl.result.from), dest: cell.isAt($ctrl.result.dest)}">
+        <td ng-repeat="cell in row track by $index" ng-click="$ctrl.onClickCell(cell)" ng-class="$ctrl.tdClass(cell)">
           <i ng-if="!crll.isNone()" class="fa fa-fw" ng-class="cell.faClass()"></i>
         </td>
       </tr>

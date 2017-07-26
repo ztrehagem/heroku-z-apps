@@ -66,6 +66,13 @@ app.component('roomPlayfield', {
       }
     };
 
+    this.tdClass = (cell)=> ({
+      selected: cell == this.selected,
+      from: this.result && cell.isAt(this.result.from),
+      dest: this.result && cell.isAt(this.result.dest),
+      e: cell.isEnemy()
+    });
+
     const select = (cell)=> {
       this.selected = cell;
       this.emitting = null;
@@ -82,6 +89,7 @@ app.component('roomPlayfield', {
         from: this.selected.toPoint(),
         dest: cell && cell.toPoint()
       }).then(([{result, info}, cbAsync])=> {
+        console.log('emitted', result, info);
         this.result = result;
         this.setPlayingInfo(info);
       }).catch(()=> {
@@ -106,6 +114,9 @@ app.component('roomPlayfield', {
       isMine() {
         return this.isGood() || this.isBad();
       }
+      isEnemy() {
+        return this.type[0] == 'e';
+      }
       isNextTo(cell) {
         return Math.abs(cell.x - this.x) + Math.abs(cell.y - this.y) == 1;
       }
@@ -129,10 +140,12 @@ app.component('roomPlayfield', {
       }
       faClass() {
         switch (this.type) {
-          case '+': return 'fa-plus-circle';
-          case '-': return 'fa-minus-circle';
-          case '!': return 'fa-check-circle';
-          case 'e': return 'fa-circle-o';
+          case '+' :
+          case 'e+': return 'fa-plus-circle';
+          case '-' :
+          case 'e-': return 'fa-minus-circle';
+          case '!' : return 'fa-check-circle';
+          case 'e' : return 'fa-circle-o';
           case 'e!': return 'fa-check-circle-o';
         }
       }
